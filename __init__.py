@@ -11,18 +11,22 @@ bl_info = {
 
 if "bpy" in locals():
     import imp
-    imp.reload(mirror)
-    imp.reload(pose)
+    imp.reload(mirror_tools)
+    imp.reload(pose_tools)
+    imp.reload(mesh_tools)
+    imp.reload(vg_tools)
     imp.reload(ui)
 else:
-    from . import mirror, pose, ui
+    from . import mirror_tools, pose_tools, mesh_tools, vg_tools, ui
 
 import bpy 
 
 def register():
     # Register classes
-    mirror.register()
-    pose.register()
+    mirror_tools.register()
+    pose_tools.register()
+    mesh_tools.register()
+    vg_tools.register()
     ui.register()
 
     #print('INFO: ' + bl_info['name'] + ' ' + common.get_current_version_str() + ' is registered!')
@@ -30,8 +34,10 @@ def register():
 
 def unregister():
     # Remove classes
-    mirror.unregister()
-    pose.unregister()
+    mirror_tools.unregister()
+    pose_tools.unregister()
+    mesh_tools.unregister()
+    vg_tools.unregister()
     ui.unregister()
 
     #print('INFO: ' + bl_info['name'] + ' ' + common.get_current_version_str() + ' is unregistered!')

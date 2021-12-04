@@ -219,6 +219,24 @@ class YFlipVertexGroups(bpy.types.Operator):
         flip_vertex_groups(context.object)
         return {'FINISHED'}
 
+#class YResetMultiresFaces(bpy.types.Operator):
+#    bl_idname = "mesh.y_reset_multires_faces"
+#    bl_label = "Reset Multires Faces"
+#    bl_description = "Reset Multires Faces"
+#    bl_options = {'REGISTER', 'UNDO'}
+#
+#    @classmethod
+#    def poll(cls, context):
+#        obj = context.object
+#        return obj and obj.type == 'MESH' and obj.mode == 'EDIT'
+#
+#    def execute(self, context):
+#        obj = context.object
+#
+#        bpy.ops.mesh.select_mirror()
+#
+#        return {'FINISHED'}
+
 class YFlipMultiresMesh(bpy.types.Operator):
     bl_idname = "mesh.y_flip_multires_mesh"
     bl_label = "Flip Multires Mesh"

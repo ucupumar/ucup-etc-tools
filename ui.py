@@ -48,6 +48,17 @@ class UCUPTOOLS_PT_item_tools(bpy.types.Panel):
             if space.overlay.show_weight:
                 r.prop(scene.tool_settings, 'vertex_group_user', expand=True) #, text='')
 
+class UCUPTOOLS_PT_vg_tools(bpy.types.Panel):
+    bl_label = "Vertex Groups"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Ucup Etc"
+
+    def draw(self, context):
+        c = self.layout.column()
+        c.operator('mesh.y_remove_unused_vertex_groups', icon='MESH_DATA', text='Remove Unused Vertex Groups')
+        c.operator('mesh.y_transfer_weights_and_setup', icon='MESH_DATA', text='Transfer Weights from last selected')
+
 class UCUPTOOLS_PT_advanced(bpy.types.Panel):
     bl_label = "Advanced"
     bl_space_type = "VIEW_3D"
@@ -76,12 +87,14 @@ class UCUPTOOLS_PT_mesh_tools(bpy.types.Panel):
         c = self.layout.column()
         c.operator('mesh.y_union_meshes', icon='MOD_BOOLEAN', text='Union Meshes')
         c.operator('mesh.y_shape_key_reset', icon='SHAPEKEY_DATA', text='Shape Key Reset')
-
+        #c.separator()
+        #c.operator('mesh.y_remove_unused_vertex_groups', icon='MESH_DATA', text='Remove Unused Vertex Groups')
 
 def register():
     bpy.utils.register_class(UCUPTOOLS_PT_pose_helper)
     bpy.utils.register_class(UCUPTOOLS_PT_mirror_tools)
     bpy.utils.register_class(UCUPTOOLS_PT_mesh_tools)
+    bpy.utils.register_class(UCUPTOOLS_PT_vg_tools)
     bpy.utils.register_class(UCUPTOOLS_PT_item_tools)
     bpy.utils.register_class(UCUPTOOLS_PT_advanced)
 
@@ -89,5 +102,6 @@ def unregister():
     bpy.utils.unregister_class(UCUPTOOLS_PT_pose_helper)
     bpy.utils.unregister_class(UCUPTOOLS_PT_mirror_tools)
     bpy.utils.unregister_class(UCUPTOOLS_PT_mesh_tools)
+    bpy.utils.unregister_class(UCUPTOOLS_PT_vg_tools)
     bpy.utils.unregister_class(UCUPTOOLS_PT_item_tools)
     bpy.utils.unregister_class(UCUPTOOLS_PT_advanced)
