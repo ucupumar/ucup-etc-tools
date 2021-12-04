@@ -1,2 +1,2 @@
 # Ucup Etc Tools
-Random blender tools for personal use and not so personal use
+Blender addon that consists of tools for personal use and not so personal use
