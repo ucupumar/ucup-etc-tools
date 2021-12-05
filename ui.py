@@ -57,6 +57,7 @@ class UCUPTOOLS_PT_outline_tools(bpy.types.Panel):
     def draw(self, context):
         c = self.layout.column()
         c.operator('object.y_add_outline', icon='OBJECT_DATA', text='Add Outline')
+        c.operator('object.y_remove_outline', icon='OBJECT_DATA', text='Remove Outline')
 
 class UCUPTOOLS_PT_vg_tools(bpy.types.Panel):
     bl_label = "Vertex Groups"
