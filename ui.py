@@ -48,6 +48,16 @@ class UCUPTOOLS_PT_item_tools(bpy.types.Panel):
             if space.overlay.show_weight:
                 r.prop(scene.tool_settings, 'vertex_group_user', expand=True) #, text='')
 
+class UCUPTOOLS_PT_outline_tools(bpy.types.Panel):
+    bl_label = "Outline Tools"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Ucup Etc"
+
+    def draw(self, context):
+        c = self.layout.column()
+        c.operator('object.y_add_outline', icon='OBJECT_DATA', text='Add Outline')
+
 class UCUPTOOLS_PT_vg_tools(bpy.types.Panel):
     bl_label = "Vertex Groups"
     bl_space_type = "VIEW_3D"
@@ -96,6 +106,7 @@ def register():
     bpy.utils.register_class(UCUPTOOLS_PT_mesh_tools)
     bpy.utils.register_class(UCUPTOOLS_PT_vg_tools)
     bpy.utils.register_class(UCUPTOOLS_PT_item_tools)
+    bpy.utils.register_class(UCUPTOOLS_PT_outline_tools)
     bpy.utils.register_class(UCUPTOOLS_PT_advanced)
 
 def unregister():
@@ -104,4 +115,5 @@ def unregister():
     bpy.utils.unregister_class(UCUPTOOLS_PT_mesh_tools)
     bpy.utils.unregister_class(UCUPTOOLS_PT_vg_tools)
     bpy.utils.unregister_class(UCUPTOOLS_PT_item_tools)
+    bpy.utils.unregister_class(UCUPTOOLS_PT_outline_tools)
     bpy.utils.unregister_class(UCUPTOOLS_PT_advanced)

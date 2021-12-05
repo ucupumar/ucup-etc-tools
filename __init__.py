@@ -15,9 +15,10 @@ if "bpy" in locals():
     imp.reload(pose_tools)
     imp.reload(mesh_tools)
     imp.reload(vg_tools)
+    imp.reload(outline_tools)
     imp.reload(ui)
 else:
-    from . import mirror_tools, pose_tools, mesh_tools, vg_tools, ui
+    from . import mirror_tools, pose_tools, mesh_tools, vg_tools, outline_tools, ui
 
 import bpy 
 
@@ -27,6 +28,7 @@ def register():
     pose_tools.register()
     mesh_tools.register()
     vg_tools.register()
+    outline_tools.register()
     ui.register()
 
     #print('INFO: ' + bl_info['name'] + ' ' + common.get_current_version_str() + ' is registered!')
@@ -38,6 +40,7 @@ def unregister():
     pose_tools.unregister()
     mesh_tools.unregister()
     vg_tools.unregister()
+    outline_tools.unregister()
     ui.unregister()
 
     #print('INFO: ' + bl_info['name'] + ' ' + common.get_current_version_str() + ' is unregistered!')
