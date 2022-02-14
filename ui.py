@@ -98,7 +98,8 @@ class UCUPTOOLS_PT_mesh_tools(bpy.types.Panel):
         c = self.layout.column()
         c.operator('mesh.y_union_meshes', icon='MOD_BOOLEAN', text='Union Meshes')
         c.operator('mesh.y_shape_key_reset', icon='SHAPEKEY_DATA', text='Shape Key Reset')
-        #c.separator()
+        c.separator()
+        c.operator('mesh.y_make_subsurf_last', icon='MOD_SUBSURF', text='Make Subsurf Last')
         #c.operator('mesh.y_remove_unused_vertex_groups', icon='MESH_DATA', text='Remove Unused Vertex Groups')
 
 def register():

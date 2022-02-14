@@ -146,10 +146,32 @@ class YShapeKeyReset(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class YMakeSubsurfLast(bpy.types.Operator):
+    bl_idname = "mesh.y_make_subsurf_last"
+    bl_label = "Make Subsurf Last"
+    bl_description = "Make Subsurf last on the modifier stack"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.object
+        return obj and obj.type == 'MESH'
+
+    def execute(self, context):
+        objs = context.selected_objects
+        for obj in context.selected_objects:
+            #if hasattr(obj, 'modifiers') and any([m for m in obj.modifiers if m.type == 'SUBSURF']):
+            if obj.type == 'MESH' and any([m for m in obj.modifiers if m.type == 'SUBSURF']):
+                mod_name = [m for m in obj.modifiers if m.type == 'SUBSURF'][0].name
+                bpy.ops.object.modifier_move_to_index(modifier=mod_name, index=len(obj.modifiers)-1)
+        return {'FINISHED'}
+
 def register():
     bpy.utils.register_class(YUnionMeshes)
     bpy.utils.register_class(YShapeKeyReset)
+    bpy.utils.register_class(YMakeSubsurfLast)
 
 def unregister():
     bpy.utils.unregister_class(YUnionMeshes)
     bpy.utils.unregister_class(YShapeKeyReset)
+    bpy.utils.unregister_class(YMakeSubsurfLast)
