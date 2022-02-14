@@ -172,7 +172,7 @@ class YMakeSubsurfLast(bpy.types.Operator):
         return {'FINISHED'}
 
 class YToggleGPUSubdiv(bpy.types.Operator):
-    bl_idname = "mesh.y_toggle_gpu_subdiv"
+    bl_idname = "view3d.y_toggle_gpu_subdiv"
     bl_label = "Toggle GPU Subdiv"
     bl_description = "Toggle GPU Subdiv Shortcut"
     bl_options = {'REGISTER', 'UNDO'}
