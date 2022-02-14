@@ -98,14 +98,27 @@ class UCUPTOOLS_PT_mesh_tools(bpy.types.Panel):
         c = self.layout.column()
         c.operator('mesh.y_union_meshes', icon='MOD_BOOLEAN', text='Union Meshes')
         c.operator('mesh.y_shape_key_reset', icon='SHAPEKEY_DATA', text='Shape Key Reset')
-        c.separator()
-        c.operator('mesh.y_make_subsurf_last', icon='MOD_SUBSURF', text='Make Subsurf Last')
+        #c.separator()
         #c.operator('mesh.y_remove_unused_vertex_groups', icon='MESH_DATA', text='Remove Unused Vertex Groups')
+
+class UCUPTOOLS_PT_subdiv_tools(bpy.types.Panel):
+    bl_label = "Subdivision Tools"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Ucup Etc"
+
+    def draw(self, context):
+        c = self.layout.column()
+        c.operator('mesh.y_make_subsurf_last', icon='MOD_SUBSURF', text='Make Subsurf Last')
+        c.alert = bpy.app.version >= (3, 1, 0) and context.preferences.system.use_gpu_subdivision
+        c.operator('mesh.y_toggle_gpu_subdiv', icon='MOD_SUBSURF', text='Toggle GPU Subdiv')
+        c.alert = False
 
 def register():
     bpy.utils.register_class(UCUPTOOLS_PT_pose_helper)
     bpy.utils.register_class(UCUPTOOLS_PT_mirror_tools)
     bpy.utils.register_class(UCUPTOOLS_PT_mesh_tools)
+    bpy.utils.register_class(UCUPTOOLS_PT_subdiv_tools)
     bpy.utils.register_class(UCUPTOOLS_PT_vg_tools)
     bpy.utils.register_class(UCUPTOOLS_PT_item_tools)
     bpy.utils.register_class(UCUPTOOLS_PT_outline_tools)
@@ -115,6 +128,7 @@ def unregister():
     bpy.utils.unregister_class(UCUPTOOLS_PT_pose_helper)
     bpy.utils.unregister_class(UCUPTOOLS_PT_mirror_tools)
     bpy.utils.unregister_class(UCUPTOOLS_PT_mesh_tools)
+    bpy.utils.unregister_class(UCUPTOOLS_PT_subdiv_tools)
     bpy.utils.unregister_class(UCUPTOOLS_PT_vg_tools)
     bpy.utils.unregister_class(UCUPTOOLS_PT_item_tools)
     bpy.utils.unregister_class(UCUPTOOLS_PT_outline_tools)

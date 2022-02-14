@@ -159,19 +159,40 @@ class YMakeSubsurfLast(bpy.types.Operator):
 
     def execute(self, context):
         objs = context.selected_objects
+        ori_active_obj = context.object
         for obj in context.selected_objects:
-            #if hasattr(obj, 'modifiers') and any([m for m in obj.modifiers if m.type == 'SUBSURF']):
-            if obj.type == 'MESH' and any([m for m in obj.modifiers if m.type == 'SUBSURF']):
+            if hasattr(obj, 'modifiers') and any([m for m in obj.modifiers if m.type == 'SUBSURF']):
+            #if obj.type == 'MESH' and any([m for m in obj.modifiers if m.type == 'SUBSURF']):
+                context.view_layer.objects.active = obj
                 mod_name = [m for m in obj.modifiers if m.type == 'SUBSURF'][0].name
                 bpy.ops.object.modifier_move_to_index(modifier=mod_name, index=len(obj.modifiers)-1)
+
+        context.view_layer.objects.active = ori_active_obj
+
+        return {'FINISHED'}
+
+class YToggleGPUSubdiv(bpy.types.Operator):
+    bl_idname = "mesh.y_toggle_gpu_subdiv"
+    bl_label = "Toggle GPU Subdiv"
+    bl_description = "Toggle GPU Subdiv Shortcut"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return bpy.app.version >= (3, 1, 0)
+
+    def execute(self, context):
+        context.preferences.system.use_gpu_subdivision = not context.preferences.system.use_gpu_subdivision
         return {'FINISHED'}
 
 def register():
     bpy.utils.register_class(YUnionMeshes)
     bpy.utils.register_class(YShapeKeyReset)
     bpy.utils.register_class(YMakeSubsurfLast)
+    bpy.utils.register_class(YToggleGPUSubdiv)
 
 def unregister():
     bpy.utils.unregister_class(YUnionMeshes)
     bpy.utils.unregister_class(YShapeKeyReset)
     bpy.utils.unregister_class(YMakeSubsurfLast)
+    bpy.utils.unregister_class(YToggleGPUSubdiv)
