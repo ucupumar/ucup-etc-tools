@@ -1,5 +1,6 @@
 import bpy, bmesh
 from bpy.props import *
+from .common import *
 
 class YToggleRestPos(bpy.types.Operator):
     bl_idname = "object.y_toggle_rest_pos"
@@ -89,8 +90,12 @@ def get_all_objects_using_rig_with_datas(rig):
 
     return objs, armods, ori_mod_props, ori_mod_idx, child_objs, parent_bones
 
-def apply_armatures(context, objs, child_objs, armature_modifier_names):
+def apply_armatures(context, objs, child_objs, armature_modifier_names, apply_above=True):
+
+    #armature_ids = []
+
     for i, o in enumerate(objs):
+        #print(o, armature_modifier_names[i])
 
         # Apply shapekeys
         if o.data.shape_keys:
@@ -104,22 +109,25 @@ def apply_armatures(context, objs, child_objs, armature_modifier_names):
         # Set object to active
         context.view_layer.objects.active = o
 
-        # Check for mirror modifiers
-        #if self.apply_above:
-        #print(o.name)
-        to_be_applied = []
-        for mod in o.modifiers:
-            if mod.type not in {'SUBSURF'}:
-                to_be_applied.append(mod)
-                #bpy.ops.object.modifier_apply(modifier=mod.name)
-            if mod.name == armature_modifier_names[i]:
-                break
+        # Check for other modifiers
+        if apply_above:
+            to_be_applied = []
+            for mod in o.modifiers:
+                if mod.type not in {'SUBSURF'}:
+                    to_be_applied.append(mod)
+                if mod.name == armature_modifier_names[i]:
+                    break
 
-        for mod in to_be_applied:
-            bpy.ops.object.modifier_apply(modifier=mod.name)
+            for mod in to_be_applied:
+                try: bpy.ops.object.modifier_apply(modifier=mod.name)
+                except Exception as e: pass
 
-        # Apply armature modifier
-        bpy.ops.object.modifier_apply(modifier=armature_modifier_names[i])
+    # Apply armature modifier
+    for i, o in enumerate(objs):
+        context.view_layer.objects.active = o
+        #armature_ids.append([j for j, m in enumerate(o.modifiers) if m.name == armature_modifier_names[i]][0])
+        try: bpy.ops.object.modifier_apply(modifier=armature_modifier_names[i])
+        except Exception as e: pass
 
     # Apply child of bones
     #bpy.ops.object.mode_set(mode='OBJECT')
@@ -129,7 +137,9 @@ def apply_armatures(context, objs, child_objs, armature_modifier_names):
 
     bpy.ops.object.parent_clear(type='CLEAR_KEEP_TRANSFORM')
 
-def set_armature_back(context, rig, objs, child_objs, ori_mod_props, parent_bones, back_to_rigify=False):
+    #return armature_ids
+
+def set_armature_back(context, rig, objs, child_objs, ori_mod_props, parent_bones, ori_mod_ids=[], back_to_rigify=False):
 
     # Set armature back
     for i, o in enumerate(objs):
@@ -138,6 +148,10 @@ def set_armature_back(context, rig, objs, child_objs, ori_mod_props, parent_bone
         context.view_layer.objects.active = o
 
         num_mods = len(o.modifiers)
+
+        if len(ori_mod_ids) > i:
+            ori_mod_idx = ori_mod_ids[i]
+        else: ori_mod_idx = 0
 
         mod = o.modifiers.new('Armature', 'ARMATURE')
 
@@ -150,7 +164,7 @@ def set_armature_back(context, rig, objs, child_objs, ori_mod_props, parent_bone
 
         # Move up new modifier
         #if self.apply_above:
-        for j in range(num_mods):
+        for j in range(num_mods-ori_mod_idx):
             bpy.ops.object.modifier_move_up(modifier=mod.name)
         #else:
         #    for j in range(num_mods-ori_mod_idx[i]):
@@ -203,6 +217,94 @@ def set_armature_back(context, rig, objs, child_objs, ori_mod_props, parent_bone
 
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.select_all(action='DESELECT')
+
+class YAppyRigifyToMetarig(bpy.types.Operator):
+    bl_idname = "object.y_apply_rigify_to_metarig"
+    bl_label = "Apply Rigify to Metarig"
+    bl_description = "Apply rigify transform to metarig and regerate rigify back"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    apply_above : BoolProperty(
+            name = "Apply Above Modifiers",
+            description = 'Apply modifiers above armature',
+            default = False)
+
+    @classmethod
+    def poll(cls, context):
+        #return context.object and context.object.type in {'ARMATURE'}
+        return context.object and context.object.type == 'ARMATURE' #and context.object.data.get("rig_id") is None
+
+    def execute(self, context):
+        if not hasattr(bpy.ops.pose, 'rigify_generate'):
+            self.report({'ERROR'}, "Rigify addon need to be installed!")
+            return {'CANCELLED'}
+
+        # Get rigify
+        rigify = context.object
+
+        # Get metarig
+        metarig = None
+        for o in context.view_layer.objects:
+            if o.type == 'ARMATURE' and hasattr(o.data, 'rigify_target_rig') and o.data.rigify_target_rig == rigify:
+                metarig = o
+                break
+
+        if not metarig:
+            self.report({'ERROR'}, "Metarig is not found!")
+            return {'CANCELLED'}
+
+        # Unhide metarig
+        ori_metarig_hide = metarig.hide_viewport
+        metarig.hide_viewport = False
+        metarig.hide_set(False)
+
+        # Get metarig parents
+        metarig_layer_cols = get_object_parent_layer_collections([], bpy.context.view_layer.layer_collection, metarig)
+        ori_metarig_hide_lcs = []
+        ori_metarig_hide_lccs = []
+        for lc in metarig_layer_cols:
+            ori_metarig_hide_lcs.append(lc.hide_viewport)
+            lc.hide_viewport = False
+            ori_metarig_hide_lccs.append(lc.collection.hide_viewport)
+            lc.collection.hide_viewport = False
+
+        # Get objects using rig
+        objs, armods, ori_mod_props, ori_mod_idx, child_objs, parent_bones = get_all_objects_using_rig_with_datas(rigify)
+
+        # Apply armature and modifiers above
+        apply_armatures(context, objs, child_objs, armods, apply_above=self.apply_above)
+
+        # Copy deform bones to metarig
+
+        for pb in metarig.pose.bones:
+            c = pb.constraints.new('COPY_TRANSFORMS')
+            c.target = rigify
+            c.subtarget = 'DEF-' + pb.name
+
+        # Apply armature deform
+        context.view_layer.objects.active = metarig
+        bpy.ops.object.mode_set(mode='POSE')
+        bpy.ops.pose.visual_transform_apply()
+        bpy.ops.pose.constraints_clear()
+        bpy.ops.pose.armature_apply(selected=False)
+
+        # Set armature back to rigify
+        set_armature_back(context, rigify, objs, child_objs, ori_mod_props, parent_bones, ori_mod_ids=ori_mod_idx, back_to_rigify=True)
+
+        # Regerate rigify
+        context.view_layer.objects.active = metarig
+        bpy.ops.object.y_regenerate_rigify()
+
+        # Recover state
+        context.view_layer.objects.active = rigify
+        metarig.hide_viewport = ori_metarig_hide
+        #metarig.hide_set(ori_metarig_hide)
+
+        for i, lc in enumerate(metarig_layer_cols):
+            lc.hide_viewport = ori_metarig_hide_lcs[i]
+            lc.collection.hide_viewport = ori_metarig_hide_lccs[i]
+
+        return {'FINISHED'}
 
 class YApplyRigifyDeform(bpy.types.Operator):
     bl_idname = "object.y_apply_rigiy_deform"
@@ -789,6 +891,7 @@ class YAppliedBone(bpy.types.PropertyGroup):
 def register():
     bpy.utils.register_class(YToggleRestPos)
     bpy.utils.register_class(YRegenerateRigify)
+    bpy.utils.register_class(YAppyRigifyToMetarig)
     bpy.utils.register_class(YApplyRigifyDeform)
     bpy.utils.register_class(YApplyArmature)
     bpy.utils.register_class(YAppliedBone)
@@ -798,6 +901,7 @@ def register():
 def unregister():
     bpy.utils.unregister_class(YToggleRestPos)
     bpy.utils.unregister_class(YRegenerateRigify)
+    bpy.utils.unregister_class(YAppyRigifyToMetarig)
     bpy.utils.unregister_class(YApplyRigifyDeform)
     bpy.utils.unregister_class(YApplyArmature)
     bpy.utils.unregister_class(YAppliedBone)
