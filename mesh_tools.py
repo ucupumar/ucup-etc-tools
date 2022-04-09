@@ -167,6 +167,9 @@ class YMakeSubsurfLast(bpy.types.Operator):
                 mod_name = [m for m in obj.modifiers if m.type == 'SUBSURF'][0].name
                 bpy.ops.object.modifier_move_to_index(modifier=mod_name, index=len(obj.modifiers)-1)
 
+            if obj.type == 'MESH':
+                obj.data.use_auto_smooth = False
+
         context.view_layer.objects.active = ori_active_obj
 
         return {'FINISHED'}

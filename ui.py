@@ -109,7 +109,7 @@ class UCUPTOOLS_PT_subdiv_tools(bpy.types.Panel):
 
     def draw(self, context):
         c = self.layout.column()
-        c.operator('mesh.y_make_subsurf_last', icon='MOD_SUBSURF', text='Make Subsurf Last')
+        c.operator('mesh.y_make_subsurf_last', icon='MOD_SUBSURF', text='Make Subsurf Last & Disable Autosmooth')
         c.alert = bpy.app.version >= (3, 1, 0) and context.preferences.system.use_gpu_subdivision
         c.operator('view3d.y_toggle_gpu_subdiv', icon='MOD_SUBSURF', text='Toggle GPU Subdiv')
         c.alert = False
