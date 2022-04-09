@@ -86,6 +86,7 @@ class UCUPTOOLS_PT_advanced(bpy.types.Panel):
 
         c.separator()
 
+        c.operator('object.y_apply_rigify_to_metarig', icon='ARMATURE_DATA', text='Apply Rigify to Metarig')
         c.operator('object.y_apply_rigiy_deform', icon='ARMATURE_DATA', text='Apply Rigify Deform')
 
 class UCUPTOOLS_PT_mesh_tools(bpy.types.Panel):
