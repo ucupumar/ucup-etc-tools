@@ -280,10 +280,11 @@ class YAppyRigifyToMetarig(bpy.types.Operator):
             c = pb.constraints.new('COPY_TRANSFORMS')
             c.target = rigify
             c.subtarget = 'DEF-' + pb.name
-
+        
         # Apply armature deform
         context.view_layer.objects.active = metarig
         bpy.ops.object.mode_set(mode='POSE')
+        bpy.ops.pose.select_all(action='SELECT')
         bpy.ops.pose.visual_transform_apply()
         bpy.ops.pose.constraints_clear()
         bpy.ops.pose.armature_apply(selected=False)
