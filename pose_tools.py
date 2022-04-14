@@ -98,9 +98,9 @@ def apply_armatures(context, objs, child_objs, armature_modifier_names, apply_ab
         #print(o, armature_modifier_names[i])
 
         # Apply shapekeys
-        if o.data.shape_keys:
-            for sk in o.data.shape_keys.key_blocks:
-                o.shape_key_remove(sk)
+        #if o.data.shape_keys:
+        #    for sk in o.data.shape_keys.key_blocks:
+        #        o.shape_key_remove(sk)
 
         # If object is multi user, make it single user
         if o.data.users > 1:
@@ -114,20 +114,22 @@ def apply_armatures(context, objs, child_objs, armature_modifier_names, apply_ab
             to_be_applied = []
             for mod in o.modifiers:
                 if mod.type not in {'SUBSURF'}:
-                    to_be_applied.append(mod)
+                    to_be_applied.append(mod.name)
                 if mod.name == armature_modifier_names[i]:
                     break
 
-            for mod in to_be_applied:
-                try: bpy.ops.object.modifier_apply(modifier=mod.name)
-                except Exception as e: pass
+            apply_modifiers_with_shape_keys(o, to_be_applied)
+            #for mod in to_be_applied:
+            #    try: bpy.ops.object.modifier_apply(modifier=mod)
+            #    except Exception as e: pass
 
     # Apply armature modifier
     for i, o in enumerate(objs):
         context.view_layer.objects.active = o
         #armature_ids.append([j for j, m in enumerate(o.modifiers) if m.name == armature_modifier_names[i]][0])
-        try: bpy.ops.object.modifier_apply(modifier=armature_modifier_names[i])
-        except Exception as e: pass
+        #try: bpy.ops.object.modifier_apply(modifier=armature_modifier_names[i])
+        #except Exception as e: pass
+        apply_modifiers_with_shape_keys(o, [armature_modifier_names[i]], False)
 
     # Apply child of bones
     #bpy.ops.object.mode_set(mode='OBJECT')
@@ -742,8 +744,8 @@ class YApplyArmature(bpy.types.Operator):
         for o in context.view_layer.objects:
 
             # Check if objects has shape keys
-            if o.data and hasattr(o.data, 'shape_keys') and o.data.shape_keys:
-                continue
+            #if o.data and hasattr(o.data, 'shape_keys') and o.data.shape_keys:
+            #    continue
 
             if o.type == 'MESH':
                 for i, mod in enumerate(o.modifiers):
@@ -781,15 +783,17 @@ class YApplyArmature(bpy.types.Operator):
                 for mod in o.modifiers:
                     if mod.type not in {'SUBSURF'}:
                         #bpy.ops.object.modifier_apply(modifier=mod.name)
-                        to_be_applied.append(mod)
+                        to_be_applied.append(mod.name)
                     if mod.name == armods[i]:
                         break
 
-            for mod in to_be_applied:
-                bpy.ops.object.modifier_apply(modifier=mod.name)
+            #for mod in to_be_applied:
+            #    bpy.ops.object.modifier_apply(modifier=mod.name)
+            apply_modifiers_with_shape_keys(o, to_be_applied)
 
             # Apply armature modifier
-            bpy.ops.object.modifier_apply(modifier=armods[i])
+            #bpy.ops.object.modifier_apply(modifier=armods[i])
+            apply_modifiers_with_shape_keys(o, [armods[i]], False)
 
         # Apply child of bones
         for o in child_objs:

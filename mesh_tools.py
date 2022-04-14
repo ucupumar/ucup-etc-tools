@@ -1,5 +1,6 @@
 import bpy
 from bpy.props import *
+from .common import *
 
 class YUnionMeshes(bpy.types.Operator):
     bl_idname = "mesh.y_union_meshes"
@@ -95,7 +96,8 @@ class YUnionMeshes(bpy.types.Operator):
 
             # Apply modifier
             #bpy.ops.object.modifier_apply(apply_as='DATA', modifier=boolmod.name)
-            bpy.ops.object.modifier_apply(modifier=boolmod.name)
+            #bpy.ops.object.modifier_apply(modifier=boolmod.name)
+            apply_modifiers_with_shape_keys(o, [boolmod.name])
 
         bpy.ops.object.select_all(action='DESELECT')
         # Delete objects
@@ -180,22 +182,88 @@ class YToggleGPUSubdiv(bpy.types.Operator):
     bl_description = "Toggle GPU Subdiv Shortcut"
     bl_options = {'REGISTER', 'UNDO'}
 
+    toogle_autosmooth: BoolProperty(
+        name="Toggle Autosmooth",
+        description="Also toggle autosmooth on all view layer objects",
+        default=True,
+    )
+
     @classmethod
     def poll(cls, context):
         return bpy.app.version >= (3, 1, 0)
 
     def execute(self, context):
         context.preferences.system.use_gpu_subdivision = not context.preferences.system.use_gpu_subdivision
+
+        # Use automsmooth if GPU subdiv is off
+        if self.toogle_autosmooth:
+            for obj in context.view_layer.objects:
+                if obj.type == 'MESH':
+                    obj.data.use_auto_smooth = not context.preferences.system.use_gpu_subdivision
+
+        return {'FINISHED'}
+
+class YPropertyCollectionModifierItem(bpy.types.PropertyGroup):
+    checked: BoolProperty(name="", default=False)
+
+class YApplyModifiersWithShapeKeys(bpy.types.Operator):
+    bl_idname = "mesh.y_apply_modifiers_with_shapekeys"
+    bl_label = "Apply Modifiers with Shape Keys"
+    bl_description = "Apply Modifiers with Shape Keys"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    my_collection: CollectionProperty(type=YPropertyCollectionModifierItem)
+
+    disable_armatures: BoolProperty(
+        name="Don't include armature deformations",
+        default=True,
+    )
+
+    def invoke(self, context, event):
+        self.my_collection.clear()
+        for i in range(len(bpy.context.object.modifiers)):
+            item = self.my_collection.add()
+            item.name = bpy.context.object.modifiers[i].name
+            item.checked = False
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+        box = self.layout.box()
+        for prop in self.my_collection:
+            box.prop(prop, "checked", text=prop["name"])
+        self.layout.prop(self, "disable_armatures")
+
+    def execute(self, context):
+        ob = bpy.context.object
+        bpy.ops.object.select_all(action='DESELECT')
+        context.view_layer.objects.active = ob
+        ob.select_set(True)
+        
+        selectedModifiers = [o.name for o in self.my_collection if o.checked]
+        
+        if not selectedModifiers:
+            self.report({'ERROR'}, 'No modifier selected!')
+            return {'FINISHED'}
+        
+        success, errorInfo = apply_modifiers_with_shape_keys(ob, selectedModifiers, self.disable_armatures)
+        
+        if not success:
+            self.report({'ERROR'}, errorInfo)
+        
         return {'FINISHED'}
 
 def register():
+    bpy.utils.register_class(YPropertyCollectionModifierItem)
     bpy.utils.register_class(YUnionMeshes)
     bpy.utils.register_class(YShapeKeyReset)
     bpy.utils.register_class(YMakeSubsurfLast)
     bpy.utils.register_class(YToggleGPUSubdiv)
+    bpy.utils.register_class(YApplyModifiersWithShapeKeys)
 
 def unregister():
+    bpy.utils.unregister_class(YPropertyCollectionModifierItem)
     bpy.utils.unregister_class(YUnionMeshes)
     bpy.utils.unregister_class(YShapeKeyReset)
     bpy.utils.unregister_class(YMakeSubsurfLast)
     bpy.utils.unregister_class(YToggleGPUSubdiv)
+    bpy.utils.unregister_class(YApplyModifiersWithShapeKeys)

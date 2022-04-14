@@ -1,4 +1,5 @@
-import bpy, bmesh
+import bpy, bmesh, time
+from .common import *
 
 mirror_dict = {
         'left' : 'right',
@@ -130,8 +131,7 @@ class YFlipMirrorModifier(bpy.types.Operator):
         num_verts = len(obj.data.vertices)
 
         # Apply mirror modifier
-        #bpy.ops.object.modifier_apply(apply_as='DATA', modifier=mod.name)
-        bpy.ops.object.modifier_apply(modifier=mod.name)
+        apply_modifiers_with_shape_keys(obj, [mod.name])
 
         # Go to edit mode to delete half
         bpy.ops.object.mode_set(mode='EDIT')
@@ -267,8 +267,9 @@ class YFlipMultiresMesh(bpy.types.Operator):
         bpy.ops.object.duplicate()
 
         dup_obj = context.object
-        #bpy.ops.object.modifier_apply(apply_as='DATA', modifier=mod_name)
-        bpy.ops.object.modifier_apply(modifier=mod_name)
+
+        apply_modifiers_with_shape_keys(dup_obj, [mod.name])
+
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
         # Back to actual object and apply transform

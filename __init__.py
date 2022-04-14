@@ -1,6 +1,6 @@
 bl_info = {
     "name": "Ucup Etc Tools",
-    "author": "Yusuf Umar",
+    "author": "Yusuf Umar, Przemysław Bągard",
     "version": (0, 1, 1),
     "blender": (2, 80, 0),
     "location": "View 3D > Tool Shelf > Ucup Etc Tools",
