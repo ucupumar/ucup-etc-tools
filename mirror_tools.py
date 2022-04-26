@@ -122,6 +122,7 @@ class YFlipMirrorModifier(bpy.types.Operator):
         self.use_mirror_u = mod.use_mirror_u
         self.use_mirror_v = mod.use_mirror_v
         self.mirror_object = mod.mirror_object
+        self.merge_threshold = mod.merge_threshold
 
         # Disable merge and clip before applying
         mod.use_mirror_merge = False
@@ -183,6 +184,7 @@ class YFlipMirrorModifier(bpy.types.Operator):
         new_mod.use_clip = self.use_clip
         new_mod.use_mirror_vertex_groups = self.use_mirror_vertex_groups
         new_mod.mirror_object = self.mirror_object
+        new_mod.merge_threshold = self.merge_threshold
 
         bpy.ops.object.mode_set(mode=ori_mode)
 
