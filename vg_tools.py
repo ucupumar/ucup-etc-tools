@@ -135,7 +135,8 @@ class YTransferWeightsAndSetup(bpy.types.Operator):
             # Go to vertex paint mode
             bpy.ops.object.mode_set(mode='WEIGHT_PAINT')
 
-            bpy.ops.object.data_transfer(use_reverse_transfer=True, data_type='VGROUP_WEIGHTS', vert_mapping='POLYINTERP_NEAREST', layers_select_src='NAME', layers_select_dst='ALL')
+            try: bpy.ops.object.data_transfer(use_reverse_transfer=True, data_type='VGROUP_WEIGHTS', vert_mapping='POLYINTERP_NEAREST', layers_select_src='NAME', layers_select_dst='ALL')
+            except Exception as e: pass
 
             # Set armature
             if rig: 
