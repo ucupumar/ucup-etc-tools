@@ -588,6 +588,9 @@ class YRegenerateRigify(bpy.types.Operator):
                 continue
         #ori_pose_position = rig.data.pose_position
 
+        # Make sure to unhide rig
+        rig.hide_set(False)
+
         # Set rig object to active
         context.view_layer.objects.active = rig
         bpy.ops.object.mode_set(mode='POSE', toggle=False)
