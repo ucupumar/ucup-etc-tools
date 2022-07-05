@@ -798,11 +798,11 @@ class YApplyArmature(bpy.types.Operator):
             to_be_applied = []
             if self.apply_above:
                 for mod in o.modifiers:
+                    if mod.name == armods[i]:
+                        break
                     if mod.type not in {'SUBSURF'}:
                         #bpy.ops.object.modifier_apply(modifier=mod.name)
                         to_be_applied.append(mod.name)
-                    if mod.name == armods[i]:
-                        break
 
             #for mod in to_be_applied:
             #    bpy.ops.object.modifier_apply(modifier=mod.name)
