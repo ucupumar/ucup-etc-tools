@@ -63,14 +63,16 @@ def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=Tr
     
     if obj.data.shape_keys:
         shapesCount = len(obj.data.shape_keys.key_blocks)
+
+    view_layer.objects.active = obj
     
     if(shapesCount == 0):
-        if disable_armatures:
-            for modifier in disabled_armature_modifiers:
-                modifier.show_viewport = True
         for modifierName in selectedModifiers:
             try: bpy.ops.object.modifier_apply(modifier=modifierName)
             except Exception as e: print(e)
+        if disable_armatures:
+            for modifier in disabled_armature_modifiers:
+                modifier.show_viewport = True
         return (True, None)
     
     # We want to preserve original object, so all shapes will be joined to it.

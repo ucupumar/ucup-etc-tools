@@ -113,10 +113,10 @@ def apply_armatures(context, objs, child_objs, armature_modifier_names, apply_ab
         if apply_above:
             to_be_applied = []
             for mod in o.modifiers:
-                if mod.type not in {'SUBSURF'}:
-                    to_be_applied.append(mod.name)
                 if mod.name == armature_modifier_names[i]:
                     break
+                if mod.type not in {'SUBSURF'}:
+                    to_be_applied.append(mod.name)
 
             apply_modifiers_with_shape_keys(o, to_be_applied)
             #for mod in to_be_applied:
