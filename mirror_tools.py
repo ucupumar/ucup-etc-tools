@@ -65,128 +65,139 @@ class YFlipMirrorModifier(bpy.types.Operator):
         return context.object and context.object.type == 'MESH'
 
     def execute(self, context):
-        obj = context.object
-        ori_mode = obj.mode
+        for obj in context.selected_objects:
+            #obj = context.object
+            context.view_layer.objects.active = obj
+            ori_mode = obj.mode
 
-        # Get mirror modifier
-        mod = None
-        mod_idx = -1
-        for i, m in enumerate(obj.modifiers):
-            if m.type == 'MIRROR':
-                mod = m
-                mod_idx = i
-                break
+            # Get mirror modifier
+            mod = None
+            mod_idx = -1
+            for i, m in enumerate(obj.modifiers):
+                if m.type == 'MIRROR':
+                    mod = m
+                    mod_idx = i
+                    break
 
-        # Check if mirror modifier is first or not
-        if mod_idx != 0:
-            self.report({'ERROR'}, "Need mirror modifier and it must be first")
-            return {'CANCELLED'}
+            # Check if mirror modifier is first or not
+            if mod_idx != 0:
+                if len(context.selected_objects) == 1:
+                    self.report({'ERROR'}, "Need mirror modifier and it must be first")
+                    return {'CANCELLED'}
 
-        # Check if mirror modifier has only one axis
-        axis = [mod.use_axis[0], mod.use_axis[1], mod.use_axis[2]]
-        axis_num = 0
-        for a in axis:
-            if a: axis_num += 1
-        if axis_num > 1 or axis_num == 0:
-            self.report({'ERROR'}, "Can only flip with only one axis")
-            return {'CANCELLED'}
+                self.report({'WARNING'}, "Need mirror modifier and it must be first")
+                continue
 
-        # Go to object mode to get selection
-        bpy.ops.object.mode_set(mode='OBJECT')
+            # Check if mirror modifier has only one axis
+            axis = [mod.use_axis[0], mod.use_axis[1], mod.use_axis[2]]
+            axis_num = 0
+            for a in axis:
+                if a: axis_num += 1
+            if axis_num > 1 or axis_num == 0:
 
-        # Remember selection
-        bpy.ops.object.mode_set(mode='EDIT')
-        bm = bmesh.from_edit_mesh(obj.data)
-        bm.verts.ensure_lookup_table()
-        bm.edges.ensure_lookup_table()
-        bm.faces.ensure_lookup_table()
-        sel_verts = [i for i, v in enumerate(bm.verts) if v.select]
-        sel_edges = [i for i, e in enumerate(bm.edges) if e.select]
-        sel_faces = [i for i, f in enumerate(bm.faces) if f.select]
+                if len(context.selected_objects) == 1:
+                    self.report({'ERROR'}, "Can only flip with only one axis")
+                    return {'CANCELLED'}
 
-        active_vert = bmesh_vert_active(bm)
-        if active_vert: active_vert = active_vert.index
+                self.report({'WARNING'}, "Can only flip with only one axis")
+                continue
 
-        active_edge = bmesh_edge_active(bm)
-        if active_edge: active_edge = active_edge.index
+            # Go to object mode to get selection
+            bpy.ops.object.mode_set(mode='OBJECT')
 
-        active_face = bm.faces.active
-        if active_face: active_face = active_face.index
+            # Remember selection
+            bpy.ops.object.mode_set(mode='EDIT')
+            bm = bmesh.from_edit_mesh(obj.data)
+            bm.verts.ensure_lookup_table()
+            bm.edges.ensure_lookup_table()
+            bm.faces.ensure_lookup_table()
+            sel_verts = [i for i, v in enumerate(bm.verts) if v.select]
+            sel_edges = [i for i, e in enumerate(bm.edges) if e.select]
+            sel_faces = [i for i, f in enumerate(bm.faces) if f.select]
 
-        bpy.ops.object.mode_set(mode='OBJECT')
+            active_vert = bmesh_vert_active(bm)
+            if active_vert: active_vert = active_vert.index
 
-        # Remember some variable
-        self.use_mirror_merge = mod.use_mirror_merge
-        self.use_clip = mod.use_clip
-        self.use_mirror_vertex_groups = mod.use_mirror_vertex_groups
-        self.use_mirror_u = mod.use_mirror_u
-        self.use_mirror_v = mod.use_mirror_v
-        self.mirror_object = mod.mirror_object
-        self.merge_threshold = mod.merge_threshold
+            active_edge = bmesh_edge_active(bm)
+            if active_edge: active_edge = active_edge.index
 
-        # Disable merge and clip before applying
-        mod.use_mirror_merge = False
-        mod.use_clip = False
+            active_face = bm.faces.active
+            if active_face: active_face = active_face.index
 
-        # Get number of vertices
-        num_verts = len(obj.data.vertices)
+            bpy.ops.object.mode_set(mode='OBJECT')
 
-        # Apply mirror modifier
-        apply_modifiers_with_shape_keys(obj, [mod.name])
+            # Remember some variable
+            self.use_mirror_merge = mod.use_mirror_merge
+            self.use_clip = mod.use_clip
+            self.use_mirror_vertex_groups = mod.use_mirror_vertex_groups
+            self.use_mirror_u = mod.use_mirror_u
+            self.use_mirror_v = mod.use_mirror_v
+            self.mirror_object = mod.mirror_object
+            self.merge_threshold = mod.merge_threshold
 
-        # Go to edit mode to delete half
-        bpy.ops.object.mode_set(mode='EDIT')
+            # Disable merge and clip before applying
+            mod.use_mirror_merge = False
+            mod.use_clip = False
 
-        # Get bmesh
-        bm = bmesh.from_edit_mesh(obj.data)
-        bm.verts.ensure_lookup_table()
+            # Get number of vertices
+            num_verts = len(obj.data.vertices)
 
-        # Deselect all first
-        bpy.ops.mesh.select_all(action='DESELECT')
+            # Apply mirror modifier
+            apply_modifiers_with_shape_keys(obj, [mod.name])
 
-        # Select all with index below num of verts before applying
-        for i in range(0, num_verts):
-            bm.verts[i].select = True
+            # Go to edit mode to delete half
+            bpy.ops.object.mode_set(mode='EDIT')
 
-        # Delete half
-        bpy.ops.mesh.delete(type='VERT')
+            # Get bmesh
+            bm = bmesh.from_edit_mesh(obj.data)
+            bm.verts.ensure_lookup_table()
 
-        # Reselect
-        bm.verts.ensure_lookup_table()
-        bm.edges.ensure_lookup_table()
-        bm.faces.ensure_lookup_table()
-        for i in sel_verts:
-            bm.verts[i].select = True
-        for i in sel_edges:
-            bm.edges[i].select = True
-        for i in sel_faces:
-            bm.faces[i].select = True
-        if active_vert:
-            bm.select_history.add(bm.verts[active_vert])
-        if active_edge:
-            bm.select_history.add(bm.edges[active_edge])
-        if active_face:
-            bm.faces.active = bm.faces[active_face]
+            # Deselect all first
+            bpy.ops.mesh.select_all(action='DESELECT')
 
-        # Bring back modifier
-        bpy.ops.object.modifier_add(type='MIRROR')
+            # Select all with index below num of verts before applying
+            for i in range(0, num_verts):
+                bm.verts[i].select = True
 
-        # Move up new mirror modifier
-        new_mod = obj.modifiers[-1]
-        for i in range(len(obj.modifiers) - 1):
-            bpy.ops.object.modifier_move_up(modifier = new_mod.name)
+            # Delete half
+            bpy.ops.mesh.delete(type='VERT')
 
-        # Bring back modifier attributes
-        new_mod.use_axis[0] = axis[0]
-        new_mod.use_axis[1] = axis[1]
-        new_mod.use_axis[2] = axis[2]
-        new_mod.use_mirror_merge = self.use_mirror_merge
-        new_mod.use_clip = self.use_clip
-        new_mod.use_mirror_vertex_groups = self.use_mirror_vertex_groups
-        new_mod.mirror_object = self.mirror_object
-        new_mod.merge_threshold = self.merge_threshold
+            # Reselect
+            bm.verts.ensure_lookup_table()
+            bm.edges.ensure_lookup_table()
+            bm.faces.ensure_lookup_table()
+            for i in sel_verts:
+                bm.verts[i].select = True
+            for i in sel_edges:
+                bm.edges[i].select = True
+            for i in sel_faces:
+                bm.faces[i].select = True
+            if active_vert:
+                bm.select_history.add(bm.verts[active_vert])
+            if active_edge:
+                bm.select_history.add(bm.edges[active_edge])
+            if active_face:
+                bm.faces.active = bm.faces[active_face]
 
-        bpy.ops.object.mode_set(mode=ori_mode)
+            # Bring back modifier
+            bpy.ops.object.modifier_add(type='MIRROR')
+
+            # Move up new mirror modifier
+            new_mod = obj.modifiers[-1]
+            for i in range(len(obj.modifiers) - 1):
+                bpy.ops.object.modifier_move_up(modifier = new_mod.name)
+
+            # Bring back modifier attributes
+            new_mod.use_axis[0] = axis[0]
+            new_mod.use_axis[1] = axis[1]
+            new_mod.use_axis[2] = axis[2]
+            new_mod.use_mirror_merge = self.use_mirror_merge
+            new_mod.use_clip = self.use_clip
+            new_mod.use_mirror_vertex_groups = self.use_mirror_vertex_groups
+            new_mod.mirror_object = self.mirror_object
+            new_mod.merge_threshold = self.merge_threshold
+
+            bpy.ops.object.mode_set(mode=ori_mode)
 
         return {'FINISHED'}
 
