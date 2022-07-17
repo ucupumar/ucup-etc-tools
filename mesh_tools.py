@@ -11,7 +11,7 @@ class YUnionMeshes(bpy.types.Operator):
     ignore_non_manifold : BoolProperty(
             name = "Ignore Non-manifold Meshes",
             description = 'Ignore non-manifold meshes',
-            default = False)
+            default = True)
 
     union_loose_parts : BoolProperty(
             name = "Union Loose Parts",
@@ -21,6 +21,11 @@ class YUnionMeshes(bpy.types.Operator):
     disable_subsurf : BoolProperty(
             name = "Disable Subsurf when joining",
             description = "Disable Subsurf modifier when joining",
+            default = True)
+
+    disable_mirror : BoolProperty(
+            name = "Disable Mirror when joining",
+            description = "Disable Mirror modifier when joining",
             default = True)
 
     @classmethod
@@ -34,6 +39,7 @@ class YUnionMeshes(bpy.types.Operator):
         self.layout.prop(self, 'ignore_non_manifold')
         self.layout.prop(self, 'union_loose_parts')
         self.layout.prop(self, 'disable_subsurf')
+        self.layout.prop(self, 'disable_mirror')
 
     def execute(self, context):
         obj = context.object
@@ -68,9 +74,6 @@ class YUnionMeshes(bpy.types.Operator):
                     self.report({'ERROR'}, "Found non-manifold objects! Union cancelled!")
                     return {'FINISHED'}
 
-        # Check if active object using subsurf modifier
-        #subsurf_found = any([m for m in obj.modifiers if m.type == 'SUBSURF'])
-
         # Separate by loose parts
         if self.union_loose_parts:
             bpy.ops.object.mode_set(mode='EDIT')
@@ -82,11 +85,11 @@ class YUnionMeshes(bpy.types.Operator):
             if o == obj: continue
 
             # Disable subsurf modifier 
-            #if subsurf_found:
-            if self.disable_subsurf:
-                for mod in o.modifiers:
-                    if mod.type == 'SUBSURF':
-                        mod.levels = 0
+            for mod in o.modifiers:
+                if self.disable_subsurf and mod.type == 'SUBSURF':
+                    mod.show_viewport = False
+                if self.disable_mirror and mod.type == 'MIRROR':
+                    mod.show_viewport = False
 
             # Add boolean modifier to active object
             bpy.ops.object.modifier_add(type='BOOLEAN')
@@ -97,7 +100,7 @@ class YUnionMeshes(bpy.types.Operator):
             # Apply modifier
             #bpy.ops.object.modifier_apply(apply_as='DATA', modifier=boolmod.name)
             #bpy.ops.object.modifier_apply(modifier=boolmod.name)
-            apply_modifiers_with_shape_keys(o, [boolmod.name])
+            apply_modifiers_with_shape_keys(obj, [boolmod.name])
 
         bpy.ops.object.select_all(action='DESELECT')
         # Delete objects
