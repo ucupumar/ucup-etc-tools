@@ -65,10 +65,23 @@ class YFlipMirrorModifier(bpy.types.Operator):
         return context.object and context.object.type == 'MESH'
 
     def execute(self, context):
-        for obj in context.selected_objects:
+
+        ori_mode = context.object.mode
+        ori_active = context.object
+
+        objs = [context.object]
+        objs.extend([o for o in context.selected_objects if o not in objs])
+        objs.extend([o for o in context.objects_in_mode_unique_data if o not in objs])
+
+        # Deselect all objects first if many objects is selected
+        if len(objs) > 1:
+            bpy.ops.object.mode_set(mode='OBJECT')
+            bpy.ops.object.select_all(action='DESELECT')
+
+        for obj in objs:
             #obj = context.object
             context.view_layer.objects.active = obj
-            ori_mode = obj.mode
+            obj.select_set(True)
 
             # Get mirror modifier
             mod = None
@@ -81,7 +94,7 @@ class YFlipMirrorModifier(bpy.types.Operator):
 
             # Check if mirror modifier is first or not
             if mod_idx != 0:
-                if len(context.selected_objects) == 1:
+                if len(objs) == 1:
                     self.report({'ERROR'}, "Need mirror modifier and it must be first")
                     return {'CANCELLED'}
 
@@ -95,15 +108,12 @@ class YFlipMirrorModifier(bpy.types.Operator):
                 if a: axis_num += 1
             if axis_num > 1 or axis_num == 0:
 
-                if len(context.selected_objects) == 1:
+                if len(objs) == 1:
                     self.report({'ERROR'}, "Can only flip with only one axis")
                     return {'CANCELLED'}
 
                 self.report({'WARNING'}, "Can only flip with only one axis")
                 continue
-
-            # Go to object mode to get selection
-            bpy.ops.object.mode_set(mode='OBJECT')
 
             # Remember selection
             bpy.ops.object.mode_set(mode='EDIT')
@@ -197,7 +207,18 @@ class YFlipMirrorModifier(bpy.types.Operator):
             new_mod.mirror_object = self.mirror_object
             new_mod.merge_threshold = self.merge_threshold
 
-            bpy.ops.object.mode_set(mode=ori_mode)
+            # Deselect current object if there are more than 1 objects
+            if len(objs) > 1:
+                bpy.ops.object.mode_set(mode='OBJECT')
+                obj.select_set(False)
+
+        # Recover selections and active object
+        if len(objs) > 1:
+            for obj in objs:
+                obj.select_set(True)
+            context.view_layer.objects.active = ori_active
+
+        bpy.ops.object.mode_set(mode=ori_mode)
 
         return {'FINISHED'}
 
