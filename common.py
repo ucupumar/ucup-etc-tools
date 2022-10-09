@@ -45,7 +45,7 @@ def copy_props_to_dict(source, target_dict, debug=False):
     if debug: print()
 
 def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=True):
-    
+
     list_properties = []
     properties = ["interpolation", "mute", "name", "relative_key", "slider_max", "slider_min", "value", "vertex_group"]
     shapesCount = 0
@@ -53,6 +53,7 @@ def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=Tr
     startTime = time.time()
 
     view_layer = bpy.context.view_layer
+    scene = bpy.context.scene
 
     disabled_armature_modifiers = []
     if disable_armatures:
@@ -64,6 +65,7 @@ def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=Tr
     if obj.data.shape_keys:
         shapesCount = len(obj.data.shape_keys.key_blocks)
 
+    ori_active = view_layer.objects.active
     view_layer.objects.active = obj
     
     if(shapesCount == 0):
@@ -73,18 +75,23 @@ def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=Tr
         if disable_armatures:
             for modifier in disabled_armature_modifiers:
                 modifier.show_viewport = True
+        view_layer.objects.active = ori_active
         return (True, None)
+
+    # Remember original selected objects
+    ori_selected_objs = [o for o in view_layer.objects if o.select_get()]
     
     # We want to preserve original object, so all shapes will be joined to it.
-    #ori_selected_objs = [o for o in view_layer.objects if o.select_get()]
-    #ori_active = view_layer.objects.active
+    if obj.mode != 'OBJECT':
+        bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.select_all(action='DESELECT')
     obj.select_set(True)
     originalIndex = obj.active_shape_key_index
     
     # Copy object which will holds all shape keys.
-    bpy.ops.object.duplicate_move(OBJECT_OT_duplicate={"linked":False, "mode":'TRANSLATION'}, TRANSFORM_OT_translate={"value":(0, 0, 0), "orient_type":'GLOBAL', "orient_matrix":((1, 0, 0), (0, 1, 0), (0, 0, 1)), "orient_matrix_type":'GLOBAL', "constraint_axis":(False, False, False), "mirror":True, "use_proportional_edit":False, "proportional_edit_falloff":'SMOOTH', "proportional_size":1, "use_proportional_connected":False, "use_proportional_projected":False, "snap":False, "snap_target":'CLOSEST', "snap_point":(0, 0, 0), "snap_align":False, "snap_normal":(0, 0, 0), "gpencil_strokes":False, "cursor_transform":False, "texture_space":False, "remove_on_cancel":False, "release_confirm":False, "use_accurate":False})
-    copyObject = view_layer.objects.active
+    copyObject = obj.copy()
+    scene.collection.objects.link(copyObject)
+    copyObject.data = copyObject.data.copy()
     copyObject.select_set(False)
     
     # Return selection to original object.
@@ -136,14 +143,17 @@ def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=Tr
         elapsedTime = currTime - startTime
 
         print("apply_modifiers_with_shape_keys: Applying shape key %d/%d ('%s', %0.2f seconds since start)" % (i+1, shapesCount, list_properties[i]["name"], elapsedTime))
-        view_layer.objects.active = copyObject
+
+        # Select copy object.
         copyObject.select_set(True)
         
         # Copy temp object.
-        bpy.ops.object.duplicate_move(OBJECT_OT_duplicate={"linked":False, "mode":'TRANSLATION'}, TRANSFORM_OT_translate={"value":(0, 0, 0), "orient_type":'GLOBAL', "orient_matrix":((1, 0, 0), (0, 1, 0), (0, 0, 1)), "orient_matrix_type":'GLOBAL', "constraint_axis":(False, False, False), "mirror":True, "use_proportional_edit":False, "proportional_edit_falloff":'SMOOTH', "proportional_size":1, "use_proportional_connected":False, "use_proportional_projected":False, "snap":False, "snap_target":'CLOSEST', "snap_point":(0, 0, 0), "snap_align":False, "snap_normal":(0, 0, 0), "gpencil_strokes":False, "cursor_transform":False, "texture_space":False, "remove_on_cancel":False, "release_confirm":False, "use_accurate":False})
-        tmpObject = view_layer.objects.active
+        tmpObject = copyObject.copy()
+        scene.collection.objects.link(tmpObject)
+        tmpObject.data = tmpObject.data.copy()
+        view_layer.objects.active = tmpObject
+
         bpy.ops.object.shape_key_remove(all=True)
-        copyObject.select_set(True)
         copyObject.active_shape_key_index = i
         
         # Get right shape-key.
@@ -170,10 +180,9 @@ def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=Tr
         obj.select_set(True)
         bpy.ops.object.join_shapes()
         obj.select_set(False)
-        view_layer.objects.active = tmpObject
         
         # Remove tmpObject
-        bpy.ops.object.delete(use_global=False)
+        bpy.data.objects.remove(tmpObject, do_unlink=True)
     
     # Restore shape key properties like name, mute etc.
     view_layer.objects.active = obj
@@ -195,10 +204,7 @@ def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=Tr
                 break
     
     # Remove copyObject.
-    obj.select_set(False)
-    view_layer.objects.active = copyObject
-    copyObject.select_set(True)
-    bpy.ops.object.delete(use_global=False)
+    bpy.data.objects.remove(copyObject, do_unlink=True)
     
     # Select original object.
     view_layer.objects.active = obj
@@ -241,6 +247,12 @@ def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=Tr
                 for key, val in mod.items():
                     try: setattr(m, key, val)
                     except Exception as e: pass
+
+    # Recover selected objects
+    bpy.ops.object.select_all(action='DESELECT')
+    for o in ori_selected_objs:
+        o.select_set(True)
+    view_layer.objects.active = ori_active
     
     return (True, None)
 

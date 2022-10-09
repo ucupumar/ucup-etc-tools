@@ -237,18 +237,14 @@ class YApplyModifiersWithShapeKeys(bpy.types.Operator):
         self.layout.prop(self, "disable_armatures")
 
     def execute(self, context):
-        ob = bpy.context.object
-        bpy.ops.object.select_all(action='DESELECT')
-        context.view_layer.objects.active = ob
-        ob.select_set(True)
-        
+
         selectedModifiers = [o.name for o in self.my_collection if o.checked]
         
         if not selectedModifiers:
             self.report({'ERROR'}, 'No modifier selected!')
             return {'FINISHED'}
         
-        success, errorInfo = apply_modifiers_with_shape_keys(ob, selectedModifiers, self.disable_armatures)
+        success, errorInfo = apply_modifiers_with_shape_keys(context.object, selectedModifiers, self.disable_armatures)
         
         if not success:
             self.report({'ERROR'}, errorInfo)
