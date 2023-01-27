@@ -276,20 +276,44 @@ class YAppyRigifyToMetarig(bpy.types.Operator):
         # Apply armature and modifiers above
         apply_armatures(context, objs, child_objs, armods, apply_above=self.apply_above)
 
-        # Copy deform bones to metarig
-
-        for pb in metarig.pose.bones:
-            c = pb.constraints.new('COPY_TRANSFORMS')
-            c.target = rigify
-            c.subtarget = 'DEF-' + pb.name
-        
-        # Apply armature deform
         context.view_layer.objects.active = metarig
+
+        # Get bones that has same head and tail
+        bpy.ops.object.mode_set(mode='EDIT')
+        eb_dict = {}
+        for eb in metarig.data.edit_bones:
+            if not eb.use_connect and eb.parent:
+                length = (eb.parent.tail - eb.head).length
+                if length < 0.0001:
+                    eb_dict[eb.parent.name] = eb.name
+
+        # Copy deform bones to metarig then apply
         bpy.ops.object.mode_set(mode='POSE')
+        for pb in metarig.pose.bones:
+            bone = metarig.data.bones[pb.name]
+            metarig.data.bones.active = bone
+
+            subtarget_name = 'DEF-' + pb.name
+            if subtarget_name in rigify.data.bones:
+                c = pb.constraints.new('COPY_TRANSFORMS')
+                c.target = rigify
+                c.subtarget = 'DEF-' + pb.name
+
+                bpy.ops.constraint.apply(constraint=c.name, owner='BONE')
+        
+        # Apply the transformed pose bones
         bpy.ops.pose.select_all(action='SELECT')
-        bpy.ops.pose.visual_transform_apply()
-        bpy.ops.pose.constraints_clear()
         bpy.ops.pose.armature_apply(selected=False)
+
+        # Match some head and tail bones to make sure its correct metarig
+        bpy.ops.object.mode_set(mode='EDIT')
+        for pbname, bname in eb_dict.items():
+            pb = metarig.data.edit_bones.get(pbname)
+            b = metarig.data.edit_bones.get(bname)
+
+            pb.tail = b.head
+
+        bpy.ops.object.mode_set(mode='POSE')
 
         # Set armature back to rigify
         set_armature_back(context, rigify, objs, child_objs, ori_mod_props, parent_bones, ori_mod_ids=ori_mod_idx, back_to_rigify=True)
