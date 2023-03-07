@@ -653,8 +653,9 @@ class YRegenerateRigify(bpy.types.Operator):
         for track in rig.animation_data.nla_tracks:
             if len(track.strips) == 0: continue
             strip = track.strips[0]
-            acts.append(strip.action)
-            frame_starts.append(strip.frame_start)
+            if strip.action:
+                acts.append(strip.action)
+                frame_starts.append(strip.frame_start)
 
         # Get action
         action = rig.animation_data.action
