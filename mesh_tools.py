@@ -172,8 +172,8 @@ class YMakeSubsurfLast(bpy.types.Operator):
                 mod_name = [m for m in obj.modifiers if m.type == 'SUBSURF'][0].name
                 bpy.ops.object.modifier_move_to_index(modifier=mod_name, index=len(obj.modifiers)-1)
 
-            if obj.type == 'MESH':
-                obj.data.use_auto_smooth = False
+                if obj.type == 'MESH':
+                    obj.data.use_auto_smooth = False
 
         context.view_layer.objects.active = ori_active_obj
 
@@ -198,10 +198,10 @@ class YToggleGPUSubdiv(bpy.types.Operator):
     def execute(self, context):
         context.preferences.system.use_gpu_subdivision = not context.preferences.system.use_gpu_subdivision
 
-        # Use automsmooth if GPU subdiv is off
+        # Use autosmooth if GPU subdiv is off
         if self.toogle_autosmooth:
             for obj in context.view_layer.objects:
-                if obj.type == 'MESH':
+                if obj.type == 'MESH' and any([m for m in obj.modifiers if m.type == 'SUBSURF']):
                     obj.data.use_auto_smooth = not context.preferences.system.use_gpu_subdivision
 
         return {'FINISHED'}
