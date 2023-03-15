@@ -90,6 +90,57 @@ class YRemoveunusedVG(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class YMergeVGDown(bpy.types.Operator):
+    bl_idname = "mesh.y_merge_vg_down"
+    bl_label = "Merge Vertex Group Down"
+    bl_description = "Merge active vertex group down"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.object
+        if not obj or obj.type != 'MESH': return False
+        vgs = obj.vertex_groups
+        active_vg = vgs.active
+        return active_vg and vgs[-1] != active_vg
+
+    def invoke(self, context, event):
+
+        obj = context.object
+        self.vg = obj.vertex_groups.active
+        self.vg_index = -1
+
+        # Get vg index
+        for i, v in enumerate(obj.vertex_groups):
+            if v == self.vg:
+                self.vg_index = i
+                break
+
+        self.vg1_index = self.vg_index+1
+        self.vg1 = obj.vertex_groups[self.vg1_index]
+
+        return context.window_manager.invoke_props_dialog(self)
+
+    def draw(self, context):
+
+        self.layout.label(text="Are you sure you want to merge vertex group")
+        self.layout.label(text="'" + self.vg1.name + "' to '" + self.vg.name + "'?")
+
+    def execute(self, context):
+
+        obj = context.object
+
+        # Merge vg
+        for v in obj.data.vertices:
+            for vg in v.groups:
+                if vg.group == self.vg1_index:
+                    obj.vertex_groups[self.vg_index].add([v.index],vg.weight,'ADD')
+        
+        # Remove merged vg
+        obj.vertex_groups.remove(self.vg1)
+
+        return {'FINISHED'}
+
 class YTransferWeightsAndSetup(bpy.types.Operator):
     bl_idname = "mesh.y_transfer_weights_and_setup"
     bl_label = "Transfer Weights and Armature Setup"
@@ -178,8 +229,10 @@ class YTransferWeightsAndSetup(bpy.types.Operator):
 
 def register():
     bpy.utils.register_class(YRemoveunusedVG)
+    bpy.utils.register_class(YMergeVGDown)
     bpy.utils.register_class(YTransferWeightsAndSetup)
 
 def unregister():
     bpy.utils.unregister_class(YRemoveunusedVG)
+    bpy.utils.unregister_class(YMergeVGDown)
     bpy.utils.unregister_class(YTransferWeightsAndSetup)
