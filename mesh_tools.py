@@ -151,6 +151,66 @@ class YShapeKeyReset(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class YApplyShapeKey(bpy.types.Operator):
+    bl_idname = "mesh.y_apply_shape_key"
+    bl_label = "Apply Shape Key"
+    bl_description = "Apply Shape Key to Basis"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.object
+        return obj and obj.type == 'MESH' and obj.mode == 'OBJECT' and obj.data.shape_keys
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self) #, width=420)
+
+    def draw(self, context):
+        obj = context.object
+        key = obj.active_shape_key
+        self.layout.label(text="Are you sure want to apply '" + key.name + "' to 'Basis'?")
+
+    def execute(self, context):
+
+        obj = context.object
+        mesh = obj.data
+        sks = [sk for sk in bpy.data.shape_keys if sk.user == mesh]
+        basis = [sk for sk in sks[0].key_blocks if sk.name == 'Basis'][0]
+        key = obj.active_shape_key
+        other_keys = [sk for sk in sks[0].key_blocks if sk not in {basis, key}]
+
+        if key.name == 'Basis':
+            self.report({'ERROR'}, "Active shape key must not be Basis")
+            return {'CANCELLED'}
+
+        # Check other keys relative position
+        ok_rels = []
+        for ok in other_keys:
+            ok_cos = []
+            for i, v in enumerate(ok.data):
+                ok_cos.append(v.co - basis.data[i].co)
+            ok_rels.append(ok_cos)
+
+        for i, v in enumerate(basis.data):
+            v.co.x = key.data[i].co.x
+            v.co.y = key.data[i].co.y
+            v.co.z = key.data[i].co.z
+
+        # Recover relative other keys coordinates
+        for i, ok in enumerate(other_keys):
+            for j, v in enumerate(ok.data):
+                v.co.x = key.data[j].co.x + ok_rels[i][j].x
+                v.co.y = key.data[j].co.y + ok_rels[i][j].y
+                v.co.z = key.data[j].co.z + ok_rels[i][j].z
+
+        # Remove current shape key
+        bpy.ops.object.shape_key_remove()
+
+        # Pont to basis
+        obj.active_shape_key_index = 0
+
+        return {'FINISHED'}
+
 class YMakeSubsurfLast(bpy.types.Operator):
     bl_idname = "mesh.y_make_subsurf_last"
     bl_label = "Make Subsurf Last"
@@ -255,6 +315,7 @@ def register():
     bpy.utils.register_class(YPropertyCollectionModifierItem)
     bpy.utils.register_class(YUnionMeshes)
     bpy.utils.register_class(YShapeKeyReset)
+    bpy.utils.register_class(YApplyShapeKey)
     bpy.utils.register_class(YMakeSubsurfLast)
     bpy.utils.register_class(YToggleGPUSubdiv)
     bpy.utils.register_class(YApplyModifiersWithShapeKeys)
@@ -263,6 +324,7 @@ def unregister():
     bpy.utils.unregister_class(YPropertyCollectionModifierItem)
     bpy.utils.unregister_class(YUnionMeshes)
     bpy.utils.unregister_class(YShapeKeyReset)
+    bpy.utils.unregister_class(YApplyShapeKey)
     bpy.utils.unregister_class(YMakeSubsurfLast)
     bpy.utils.unregister_class(YToggleGPUSubdiv)
     bpy.utils.unregister_class(YApplyModifiersWithShapeKeys)
