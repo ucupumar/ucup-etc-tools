@@ -157,6 +157,18 @@ class YApplyShapeKey(bpy.types.Operator):
     bl_description = "Apply Shape Key to Basis"
     bl_options = {'REGISTER', 'UNDO'}
 
+    delete_original: BoolProperty(
+        name="Delete Original",
+        description="Delete original (active) shape key",
+        default=False,
+    )
+
+    use_current_value: BoolProperty(
+        name="Use Current Key Value",
+        description="Use current shape key value (if not, it will be using 1.0 value)",
+        default=True,
+    )
+
     @classmethod
     def poll(cls, context):
         obj = context.object
@@ -168,6 +180,8 @@ class YApplyShapeKey(bpy.types.Operator):
     def draw(self, context):
         obj = context.object
         key = obj.active_shape_key
+        self.layout.prop(self, 'delete_original', text="Delete '" + key.name + "'")
+        self.layout.prop(self, 'use_current_value', text="Use Current Value (" + '{0:.3g}'.format(key.value) + ")")
         self.layout.label(text="Are you sure want to apply '" + key.name + "' to 'Basis'?")
 
     def execute(self, context):
@@ -175,39 +189,59 @@ class YApplyShapeKey(bpy.types.Operator):
         obj = context.object
         mesh = obj.data
         sks = [sk for sk in bpy.data.shape_keys if sk.user == mesh]
-        basis = [sk for sk in sks[0].key_blocks if sk.name == 'Basis'][0]
         key = obj.active_shape_key
-        other_keys = [sk for sk in sks[0].key_blocks if sk not in {basis, key}]
 
         if key.name == 'Basis':
             self.report({'ERROR'}, "Active shape key must not be Basis")
             return {'CANCELLED'}
 
-        # Check other keys relative position
-        ok_rels = []
-        for ok in other_keys:
-            ok_cos = []
-            for i, v in enumerate(ok.data):
-                ok_cos.append(v.co - basis.data[i].co)
-            ok_rels.append(ok_cos)
+        # Get value
+        value = key.value if self.use_current_value else 1.0
 
+        # Get basis
+        basis = [sk for sk in sks[0].key_blocks if sk.name == 'Basis']
+        if not basis:
+            self.report({'ERROR'}, "Basis shape key should exists!")
+            return {'CANCELLED'}
+        basis = basis[0]
+        
+        # All keys expect basis
+        keys = [sk for sk in sks[0].key_blocks if sk != basis]
+
+        # Check other keys relative position
+        rels = []
+        rel_key_idx = -1
+        for i, k in enumerate(keys):
+            if k == key: rel_key_idx = i
+            cos = []
+            for i, v in enumerate(k.data):
+                cos.append(v.co - basis.data[i].co)
+            rels.append(cos)
+
+        rel_key = rels[rel_key_idx]
+
+        # Apply key to basis
         for i, v in enumerate(basis.data):
-            v.co.x = key.data[i].co.x
-            v.co.y = key.data[i].co.y
-            v.co.z = key.data[i].co.z
+            v.co.x += rel_key[i].x * value
+            v.co.y += rel_key[i].y * value
+            v.co.z += rel_key[i].z * value
 
         # Recover relative other keys coordinates
-        for i, ok in enumerate(other_keys):
-            for j, v in enumerate(ok.data):
-                v.co.x = key.data[j].co.x + ok_rels[i][j].x
-                v.co.y = key.data[j].co.y + ok_rels[i][j].y
-                v.co.z = key.data[j].co.z + ok_rels[i][j].z
+        for i, k in enumerate(keys):
+            if k == key: continue
+            for j, v in enumerate(k.data):
+                v.co.x = basis.data[j].co.x + rels[i][j].x
+                v.co.y = basis.data[j].co.y + rels[i][j].y
+                v.co.z = basis.data[j].co.z + rels[i][j].z
 
         # Remove current shape key
-        bpy.ops.object.shape_key_remove()
+        if self.delete_original:
+            bpy.ops.object.shape_key_remove()
 
-        # Pont to basis
-        obj.active_shape_key_index = 0
+        # Point to basis
+        for i, sk in enumerate(sks[0].key_blocks):
+            if sk.name == 'Basis':
+                obj.active_shape_key_index = i
 
         return {'FINISHED'}
 
