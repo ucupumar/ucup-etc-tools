@@ -28,6 +28,11 @@ class YUnionMeshes(bpy.types.Operator):
             description = "Disable Mirror modifier when joining",
             default = True)
 
+    disable_armature : BoolProperty(
+            name = "Disable Armature when joining",
+            description = "Disable Armature modifier when joining",
+            default = True)
+
     @classmethod
     def poll(cls, context):
         return context.object #and context.object.type == 'MESH'
@@ -40,6 +45,7 @@ class YUnionMeshes(bpy.types.Operator):
         self.layout.prop(self, 'union_loose_parts')
         self.layout.prop(self, 'disable_subsurf')
         self.layout.prop(self, 'disable_mirror')
+        self.layout.prop(self, 'disable_armature')
 
     def execute(self, context):
         obj = context.object
@@ -89,6 +95,8 @@ class YUnionMeshes(bpy.types.Operator):
                 if self.disable_subsurf and mod.type == 'SUBSURF':
                     mod.show_viewport = False
                 if self.disable_mirror and mod.type == 'MIRROR':
+                    mod.show_viewport = False
+                if self.disable_armature and mod.type == 'ARMATURE':
                     mod.show_viewport = False
 
             # Add boolean modifier to active object
