@@ -142,6 +142,11 @@ class YFlipMirrorModifier(bpy.types.Operator):
             self.use_mirror_vertex_groups = mod.use_mirror_vertex_groups
             self.use_mirror_u = mod.use_mirror_u
             self.use_mirror_v = mod.use_mirror_v
+            self.use_mirror_udim = mod.use_mirror_udim
+            self.mirror_offset_u = mod.mirror_offset_u
+            self.mirror_offset_v = mod.mirror_offset_v
+            self.offset_u = mod.offset_u
+            self.offset_v = mod.offset_v
             self.mirror_object = mod.mirror_object
             self.merge_threshold = mod.merge_threshold
 
@@ -204,6 +209,13 @@ class YFlipMirrorModifier(bpy.types.Operator):
             new_mod.use_mirror_merge = self.use_mirror_merge
             new_mod.use_clip = self.use_clip
             new_mod.use_mirror_vertex_groups = self.use_mirror_vertex_groups
+            new_mod.use_mirror_u = self.use_mirror_u
+            new_mod.use_mirror_v = self.use_mirror_v
+            new_mod.use_mirror_udim = self.use_mirror_udim
+            new_mod.mirror_offset_u = self.mirror_offset_u
+            new_mod.mirror_offset_v = self.mirror_offset_v
+            new_mod.offset_u = self.offset_u
+            new_mod.offset_v = self.offset_v
             new_mod.mirror_object = self.mirror_object
             new_mod.merge_threshold = self.merge_threshold
 
