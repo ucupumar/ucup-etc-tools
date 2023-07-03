@@ -148,15 +148,32 @@ class YTransferWeightsAndSetup(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     put_new_mod_above_subsurf : BoolProperty(
-            name = "Above Sursurf",
+            name = "Above Subsurf",
             description = "Put New Modifier above Subdivision Surface",
             default = True)
+
+    do_normalize : BoolProperty(
+            name = 'Use Normalize',
+            description = "Do normalize all after transfer",
+            default = True
+            )
 
     @classmethod
     def poll(cls, context):
         obj = context.object
         objs = [o for o in context.selected_objects if o.type == 'MESH']
         return obj and obj.type == 'MESH' and len(objs) > 1
+
+    def invoke(self, context, event):
+        self.num_of_flags = 32
+        return context.window_manager.invoke_props_dialog(self)
+
+    def check(self, context):
+        return True
+
+    def draw(self, context):
+        self.layout.prop(self, 'do_normalize')
+        self.layout.prop(self, 'put_new_mod_above_subsurf')
 
     def execute(self, context):
 
@@ -186,8 +203,13 @@ class YTransferWeightsAndSetup(bpy.types.Operator):
             # Go to vertex paint mode
             bpy.ops.object.mode_set(mode='WEIGHT_PAINT')
 
-            try: bpy.ops.object.data_transfer(use_reverse_transfer=True, data_type='VGROUP_WEIGHTS', vert_mapping='POLYINTERP_NEAREST', layers_select_src='NAME', layers_select_dst='ALL')
-            except Exception as e: pass
+            try: 
+                bpy.ops.object.data_transfer(use_reverse_transfer=True, data_type='VGROUP_WEIGHTS', vert_mapping='POLYINTERP_NEAREST', layers_select_src='NAME', layers_select_dst='ALL')
+            except Exception as e: 
+                print(e)
+
+            if self.do_normalize:
+                bpy.ops.object.vertex_group_normalize_all(group_select_mode='BONE_DEFORM')
 
             # Set armature
             if rig: 
