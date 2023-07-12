@@ -268,6 +268,10 @@ class YShapeKeyToAttribute(bpy.types.Operator):
             self.report({'ERROR'}, "Active shape key must not be Basis")
             return {'CANCELLED'}
 
+        ori_mode = obj.mode
+        if obj.mode == 'EDIT':
+            bpy.ops.object.mode_set(mode='OBJECT')
+
         # Set or Get Attribute
         attr_name = 'SK-' + key.name
         attr = obj.data.attributes.get(attr_name)
@@ -278,6 +282,9 @@ class YShapeKeyToAttribute(bpy.types.Operator):
             attr.data[i].vector.x = key.data[i].co.x - v.co.x
             attr.data[i].vector.y = key.data[i].co.y - v.co.y
             attr.data[i].vector.z = key.data[i].co.z - v.co.z
+
+        if ori_mode != obj.mode:
+            bpy.ops.object.mode_set(mode=ori_mode)
 
         self.report({'INFO'}, "Shape key '" + key.name + "' is converted to attribute '" + attr_name + "'!")
 
