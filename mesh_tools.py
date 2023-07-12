@@ -198,21 +198,15 @@ class YApplyShapeKey(bpy.types.Operator):
         mesh = obj.data
         sks = [sk for sk in bpy.data.shape_keys if sk.user == mesh]
         key = obj.active_shape_key
+        basis = key.relative_key
 
-        if key.name == 'Basis':
+        if key == basis:
             self.report({'ERROR'}, "Active shape key must not be Basis")
             return {'CANCELLED'}
 
         # Get value
         value = key.value if self.use_current_value else 1.0
 
-        # Get basis
-        basis = [sk for sk in sks[0].key_blocks if sk.name == 'Basis']
-        if not basis:
-            self.report({'ERROR'}, "Basis shape key should exists!")
-            return {'CANCELLED'}
-        basis = basis[0]
-        
         # All keys expect basis
         keys = [sk for sk in sks[0].key_blocks if sk != basis]
 
@@ -250,6 +244,42 @@ class YApplyShapeKey(bpy.types.Operator):
         for i, sk in enumerate(sks[0].key_blocks):
             if sk.name == 'Basis':
                 obj.active_shape_key_index = i
+
+        return {'FINISHED'}
+
+class YShapeKeyToAttribute(bpy.types.Operator):
+    bl_idname = "mesh.y_shape_key_to_attribute"
+    bl_label = "Convert Shape Key to Attribute"
+    bl_description = "Convert shape key to attribute"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        obj = context.object
+        return obj and obj.type == 'MESH' and obj.data.shape_keys
+
+    def execute(self, context):
+        obj = context.object
+        mesh = obj.data
+        sks = [sk for sk in bpy.data.shape_keys if sk.user == mesh]
+        key = obj.active_shape_key
+
+        if key == key.relative_key:
+            self.report({'ERROR'}, "Active shape key must not be Basis")
+            return {'CANCELLED'}
+
+        # Set or Get Attribute
+        attr_name = 'SK-' + key.name
+        attr = obj.data.attributes.get(attr_name)
+        if not attr:
+            attr = obj.data.attributes.new(attr_name, 'FLOAT_VECTOR', 'POINT')
+
+        for i, v in enumerate(mesh.vertices):
+            attr.data[i].vector.x = key.data[i].co.x - v.co.x
+            attr.data[i].vector.y = key.data[i].co.y - v.co.y
+            attr.data[i].vector.z = key.data[i].co.z - v.co.z
+
+        self.report({'INFO'}, "Shape key '" + key.name + "' is converted to attribute '" + attr_name + "'!")
 
         return {'FINISHED'}
 
@@ -358,6 +388,7 @@ def register():
     bpy.utils.register_class(YUnionMeshes)
     bpy.utils.register_class(YShapeKeyReset)
     bpy.utils.register_class(YApplyShapeKey)
+    bpy.utils.register_class(YShapeKeyToAttribute)
     bpy.utils.register_class(YMakeSubsurfLast)
     bpy.utils.register_class(YToggleGPUSubdiv)
     bpy.utils.register_class(YApplyModifiersWithShapeKeys)
@@ -367,6 +398,7 @@ def unregister():
     bpy.utils.unregister_class(YUnionMeshes)
     bpy.utils.unregister_class(YShapeKeyReset)
     bpy.utils.unregister_class(YApplyShapeKey)
+    bpy.utils.unregister_class(YShapeKeyToAttribute)
     bpy.utils.unregister_class(YMakeSubsurfLast)
     bpy.utils.unregister_class(YToggleGPUSubdiv)
     bpy.utils.unregister_class(YApplyModifiersWithShapeKeys)
