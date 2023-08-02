@@ -208,9 +208,6 @@ class YTransferWeightsAndSetup(bpy.types.Operator):
             except Exception as e: 
                 print(e)
 
-            if self.do_normalize:
-                bpy.ops.object.vertex_group_normalize_all(group_select_mode='BONE_DEFORM')
-
             # Set armature
             if rig: 
                 # Check if armature already been set
@@ -234,6 +231,9 @@ class YTransferWeightsAndSetup(bpy.types.Operator):
                     # Check if object is parented to bone
                     if o.parent == rig and o.parent_type == 'BONE':
                         o.parent_type = 'OBJECT'
+
+            if self.do_normalize:
+                bpy.ops.object.vertex_group_normalize_all(group_select_mode='BONE_DEFORM')
 
             # Deselect object
             bpy.ops.object.mode_set(mode='OBJECT')
