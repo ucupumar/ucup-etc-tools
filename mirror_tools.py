@@ -127,10 +127,8 @@ class YFlipMirrorModifier(bpy.types.Operator):
 
             active_vert = bmesh_vert_active(bm)
             if active_vert: active_vert = active_vert.index
-
             active_edge = bmesh_edge_active(bm)
             if active_edge: active_edge = active_edge.index
-
             active_face = bm.faces.active
             if active_face: active_face = active_face.index
 
@@ -294,8 +292,13 @@ class YFlipMultiresMesh(bpy.types.Operator):
         return context.object and context.object.type == 'MESH'
 
     def execute(self, context):
+        scene = context.scene
         obj = context.object
+        ori_mode = obj.mode
+        ori_orientation = scene.transform_orientation_slots[0].type
+        ori_select = obj.select_get()
 
+        # Get multires modifier
         multires = [m for m in obj.modifiers if m.type == 'MULTIRES']
         if not multires:
             self.report({'ERROR'}, "Need mesh with multires modifier")
@@ -304,18 +307,62 @@ class YFlipMultiresMesh(bpy.types.Operator):
         multires = multires[0]
         mod_name = multires.name
 
+        # Remember multires props
+        ori_levels = multires.levels
+
+        # Get other modifiers
+        mod_names = [m.name for m in obj.modifiers if m.type != multires]
+        ori_mod_viewports = []
+        for mname in mod_names:
+            m = obj.modifiers.get(mname)
+            ori_mod_viewports.append(m.show_viewport)
+            m.show_viewport = False
+
+        # Axis mirror will be based on first mirror modifier if available
+        axis = 'x'
+        mirrors = [m for m in obj.modifiers if m.type == 'MIRROR']
+        if any(mirrors):
+            first_mirror = mirrors[0]
+            if first_mirror.use_axis[0]:
+                axis = 'x'
+            elif first_mirror.use_axis[1]:
+                axis = 'y'
+            elif first_mirror.use_axis[2]:
+                axis = 'z'
+
+        # Remember selection
+        bpy.ops.object.mode_set(mode='EDIT')
+        bm = bmesh.from_edit_mesh(obj.data)
+        bm.verts.ensure_lookup_table()
+        bm.edges.ensure_lookup_table()
+        bm.faces.ensure_lookup_table()
+        sel_verts = [i for i, v in enumerate(bm.verts) if v.select]
+        sel_edges = [i for i, e in enumerate(bm.edges) if e.select]
+        sel_faces = [i for i, f in enumerate(bm.faces) if f.select]
+
+        active_vert = bmesh_vert_active(bm)
+        if active_vert: active_vert = active_vert.index
+        active_edge = bmesh_edge_active(bm)
+        if active_edge: active_edge = active_edge.index
+        active_face = bm.faces.active
+        if active_face: active_face = active_face.index
+
         # Always select object
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.select_all(action='DESELECT')
         obj.select_set(True)
 
-        bpy.ops.transform.mirror(constraint_axis=(True, False, False), use_proportional_edit=False)
+        # Mirror object and duplicate
+        scene.transform_orientation_slots[0].type = 'LOCAL'
+        bpy.ops.transform.mirror(constraint_axis=(axis=='x', axis=='y', axis=='z'))
         bpy.ops.object.duplicate()
-
         dup_obj = context.object
 
-        apply_modifiers_with_shape_keys(dup_obj, [mod.name])
+        # Apply multires
+        multires.levels = multires.total_levels
+        apply_modifiers_with_shape_keys(dup_obj, [multires.name])
 
+        # Apply transform
         bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
 
         # Back to actual object and apply transform
@@ -333,15 +380,49 @@ class YFlipMultiresMesh(bpy.types.Operator):
         bpy.ops.object.delete()
         obj.select_set(True)
 
-        # Also flip vertex groups
-        flip_vertex_groups(obj)
+        # Also flip vertex groups if using x axis
+        if axis == 'x':
+            flip_vertex_groups(obj)
 
         # Flip normal
         bpy.ops.object.mode_set(mode='EDIT')
         bpy.ops.mesh.reveal()
         bpy.ops.mesh.select_all(action='SELECT')
         bpy.ops.mesh.flip_normals()
+
+        bpy.ops.mesh.select_all(action='DESELECT')
+
+        # Reselect
+        bm = bmesh.from_edit_mesh(obj.data)
+        bm.verts.ensure_lookup_table()
+        bm.edges.ensure_lookup_table()
+        bm.faces.ensure_lookup_table()
+        for i in sel_verts:
+            bm.verts[i].select = True
+        for i in sel_edges:
+            bm.edges[i].select = True
+        for i in sel_faces:
+            bm.faces[i].select = True
+        if active_vert:
+            bm.select_history.add(bm.verts[active_vert])
+        if active_edge:
+            bm.select_history.add(bm.edges[active_edge])
+        if active_face:
+            bm.faces.active = bm.faces[active_face]
+
         bpy.ops.object.mode_set(mode='OBJECT')
+
+        # Recover stuffs
+        for i, mname in enumerate(mod_names):
+            m = obj.modifiers.get(mname)
+            m.show_viewport = ori_mod_viewports[i]
+
+        multires = obj.modifiers.get(mod_name)
+        multires.levels = ori_levels
+
+        bpy.ops.object.mode_set(mode=ori_mode)
+        scene.transform_orientation_slots[0].type = ori_orientation
+        obj.select_set(ori_select)
 
         return {'FINISHED'}
 
