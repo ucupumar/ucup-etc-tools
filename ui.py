@@ -24,6 +24,7 @@ class UCUPTOOLS_PT_mirror_tools(bpy.types.Panel):
 
         c.separator()
 
+        c.operator('mesh.y_apply_multires_mirror', icon='MOD_MIRROR', text='Apply Multires Mirror')
         #c.operator('mesh.y_reset_multires_faces', icon='FILE_REFRESH', text='Reset Mulitires Faces')
 
 class UCUPTOOLS_PT_item_tools(bpy.types.Panel):

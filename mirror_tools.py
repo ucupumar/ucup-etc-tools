@@ -426,12 +426,127 @@ class YFlipMultiresMesh(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class YApplyMultiresMirror(bpy.types.Operator):
+    bl_idname = "mesh.y_apply_multires_mirror"
+    bl_label = "Apply Multires Mirror"
+    bl_description = "Apply Mirror modifier below Multires"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.object and context.object.type == 'MESH'
+
+    def execute(self, context):
+        scene = context.scene
+        obj = context.object
+        ori_orientation = scene.transform_orientation_slots[0].type
+
+        # Get multires modifier
+        multires = None
+        mirror = None
+
+        if len(obj.modifiers) > 0 and obj.modifiers[0].type == 'MULTIRES' and obj.modifiers[0].show_viewport:
+            multires = obj.modifiers[0]
+        multires_name = multires.name
+
+        mirrors = [m for m in obj.modifiers if m.type == 'MIRROR' and m.show_viewport]
+        if any(mirrors): mirror = mirrors[0]
+            
+        if not multires or not mirror:
+            self.report({'ERROR'}, "Need mesh with both multires and mirror modifer enabled!")
+            return {'CANCELLED'}
+
+        # Set orientation
+        scene.transform_orientation_slots[0].type = 'LOCAL'
+
+        # Select object first
+        bpy.ops.object.mode_set(mode='OBJECT')
+        bpy.ops.object.select_all(action='DESELECT')
+        obj.select_set(True)
+
+        # Get props
+        use_axis = [ua for ua in mirror.use_axis]
+        use_merge = mirror.use_mirror_merge
+
+        # Remove mirror modifier
+        bpy.ops.object.modifier_remove(modifier=mirror.name)
+
+        # Loop through mirror axis
+        for i in range(3):
+            if not use_axis[i]: continue
+
+            # Duplicate and mirror
+            bpy.ops.object.duplicate()
+            bpy.ops.transform.mirror(constraint_axis=(i==0, i==1, i==2))
+            dup = context.object
+            obj.select_set(False)
+
+            # Duplicate for applied multires
+            bpy.ops.object.duplicate()
+            dup_source = context.object
+
+            # Apply multires
+            mod = dup_source.modifiers.get(multires_name)
+            mod.levels = multires.total_levels
+            apply_modifiers_with_shape_keys(dup_source, [multires_name])
+
+            # Apply transform
+            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+
+            # Back to actual object and apply transform
+            dup_source.select_set(False)
+            dup.select_set(True)
+            context.view_layer.objects.active = dup
+            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+
+            # Reshape multires
+            dup_source.select_set(True)
+            bpy.ops.object.multires_reshape(modifier=multires_name)
+
+            # Delete duplicated object
+            dup.select_set(False)
+            bpy.ops.object.delete()
+            dup.select_set(True)
+
+            # Flip normal
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.reveal()
+            bpy.ops.mesh.select_all(action='SELECT')
+            bpy.ops.mesh.flip_normals()
+            bpy.ops.mesh.select_all(action='DESELECT')
+
+            # Back to object mode
+            bpy.ops.object.mode_set(mode='OBJECT')
+
+            # Join duplicated object to main object
+            context.view_layer.objects.active = obj
+            obj.select_set(True)
+            bpy.ops.object.join()
+
+            # Merge objects using remove doubles
+            # Not the best solution but it works most of the time
+            if use_merge:
+                bpy.ops.object.mode_set(mode='EDIT')
+                bpy.ops.mesh.select_all(action='SELECT')
+                bpy.ops.mesh.region_to_loop()
+                bpy.ops.mesh.remove_doubles()
+                bpy.ops.mesh.select_all(action='DESELECT')
+
+                # Back to object mode
+                bpy.ops.object.mode_set(mode='OBJECT')
+
+        scene.transform_orientation_slots[0].type = ori_orientation
+
+        return {'FINISHED'}
+
 def register():
     bpy.utils.register_class(YFlipMirrorModifier)
     bpy.utils.register_class(YFlipVertexGroups)
     bpy.utils.register_class(YFlipMultiresMesh)
+    bpy.utils.register_class(YApplyMultiresMirror)
 
 def unregister():
     bpy.utils.unregister_class(YFlipMirrorModifier)
     bpy.utils.unregister_class(YFlipVertexGroups)
     bpy.utils.unregister_class(YFlipMultiresMesh)
+    bpy.utils.unregister_class(YApplyMultiresMirror)
