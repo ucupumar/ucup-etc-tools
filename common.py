@@ -1,5 +1,10 @@
 import bpy, time
 
+def is_greater_than_410():
+    if bpy.app.version >= (4, 1, 0):
+        return True
+    return False 
+
 def get_object_parent_layer_collections(arr, col, obj):
     for o in col.collection.objects:
         if o == obj:
