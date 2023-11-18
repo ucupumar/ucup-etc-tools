@@ -1,5 +1,10 @@
 import bpy, time
 
+def is_greater_than_400():
+    if bpy.app.version >= (4, 0, 0):
+        return True
+    return False 
+
 def is_greater_than_410():
     if bpy.app.version >= (4, 1, 0):
         return True

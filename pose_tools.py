@@ -182,7 +182,12 @@ def set_armature_back(context, rig, objs, child_objs, ori_mod_props, parent_bone
     bpy.ops.pose.select_all(action='DESELECT')
 
     if back_to_rigify:
-        rig.data.layers[29] = True
+        if is_greater_than_400():
+            if 'Layer 30' in rig.data.collections:
+                rig.data.collections['Layer 30'].is_visible = True
+            elif 'DEF' in rig.data.collections:
+                rig.data.collections['DEF'].is_visible = True
+        else: rig.data.layers[29] = True
 
     for i, o in enumerate(child_objs):
         o.select_set(True)
@@ -215,7 +220,12 @@ def set_armature_back(context, rig, objs, child_objs, ori_mod_props, parent_bone
             pbone.bone.select = False
 
     if back_to_rigify:
-        rig.data.layers[29] = False
+        if is_greater_than_400():
+            if 'Layer 30' in rig.data.collections:
+                rig.data.collections['Layer 30'].is_visible = False
+            elif 'DEF' in rig.data.collections:
+                rig.data.collections['DEF'].is_visible = False
+        else: rig.data.layers[29] = False
 
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.select_all(action='DESELECT')
@@ -480,8 +490,12 @@ class YApplyRigifyDeform(bpy.types.Operator):
                 bone.constraints.remove(bc)
 
         # Set layer
-        for i in range(32):
-            rig.data.layers[i] = True
+        if is_greater_than_400():
+            for c in rig.data.collections:
+                c.is_visible = True
+        else:
+            for i in range(32):
+                rig.data.layers[i] = True
 
         # Get missing parents
         bpy.ops.object.mode_set(mode='EDIT')
@@ -621,9 +635,14 @@ class YRegenerateRigify(bpy.types.Operator):
 
         # Enable all layers
         ori_layer_enables = []
-        for i in range(32):
-            if rig.data.layers[i]: ori_layer_enables.append(i)
-            rig.data.layers[i] = True
+        if is_greater_than_400():
+            for c in rig.data.collections:
+                if c.is_visible: ori_layer_enables.append(c.name)
+                c.is_visible = True
+        else:
+            for i in range(32):
+                if rig.data.layers[i]: ori_layer_enables.append(i)
+                rig.data.layers[i] = True
 
         # Copy all pose bones
         bpy.ops.pose.select_all(action='SELECT')
@@ -660,8 +679,19 @@ class YRegenerateRigify(bpy.types.Operator):
         # Get action
         action = rig.animation_data.action
 
-        # Regenerate rigify
+        # Select metarig
         context.view_layer.objects.active = metarig
+
+        # Old rigify flag
+        is_old_rigify = False
+
+        # Update metarig for Blender 4.0 or above
+        if is_greater_than_400():
+            if 'Layer 1' in metarig.data.collections:
+                is_old_rigify = True
+                bpy.ops.armature.rigify_upgrade_layers()
+
+        # Regenerate rigify
         bpy.ops.pose.rigify_generate()
 
         # Paste to new rig
@@ -692,8 +722,13 @@ class YRegenerateRigify(bpy.types.Operator):
             strip = track.strips.new(act.name, int(frame_starts[i]), act)
 
         # Enable layers
-        for i in range(32):
-            rig.data.layers[i] = True if i in ori_layer_enables else False
+        if is_greater_than_400():
+            if not is_old_rigify:
+                for c in rig.data.collections:
+                    c.is_visible = True if c.name in ori_layer_enables else False
+        else:
+            for i in range(32):
+                rig.data.layers[i] = True if i in ori_layer_enables else False
 
         # Recover stuffs
         bpy.ops.object.mode_set(mode=ori_mode, toggle=False)
