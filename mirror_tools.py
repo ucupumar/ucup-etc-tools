@@ -445,9 +445,10 @@ class YApplyMultiresMirror(bpy.types.Operator):
         multires = None
         mirror = None
 
+        multires_name = ''
         if len(obj.modifiers) > 0 and obj.modifiers[0].type == 'MULTIRES' and obj.modifiers[0].show_viewport:
             multires = obj.modifiers[0]
-        multires_name = multires.name
+            multires_name = multires.name
 
         mirrors = [m for m in obj.modifiers if m.type == 'MIRROR' and m.show_viewport]
         if any(mirrors): mirror = mirrors[0]
