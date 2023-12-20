@@ -1,5 +1,6 @@
 import bpy
 from bpy.props import *
+from .common import *
 
 THRES = 0.0
 
@@ -184,7 +185,7 @@ class YTransferWeightsAndSetup(bpy.types.Operator):
 
         # Check armature setup
         rig = None
-        mod = [m for m in obj.modifiers if m.type == 'ARMATURE' and m.object and m.show_render and m.show_viewport]
+        mod = [m for m in obj.modifiers if m.type == 'ARMATURE' and m.object and m.show_viewport]
         if mod: 
             mod = mod[0]
             rig = mod.object
@@ -233,7 +234,9 @@ class YTransferWeightsAndSetup(bpy.types.Operator):
                         o.parent_type = 'OBJECT'
 
             if self.do_normalize:
-                bpy.ops.object.vertex_group_normalize_all(group_select_mode='BONE_DEFORM')
+                if is_greater_than_400(): 
+                    bpy.ops.object.vertex_group_normalize_all(group_select_mode='ALL')
+                else: bpy.ops.object.vertex_group_normalize_all(group_select_mode='BONE_DEFORM')
 
             # Deselect object
             bpy.ops.object.mode_set(mode='OBJECT')
