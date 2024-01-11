@@ -98,6 +98,9 @@ def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=Tr
     obj.select_set(True)
     originalIndex = obj.active_shape_key_index
     
+    originalHide = obj.hide_get()
+    obj.hide_set(False)
+    
     # Copy object which will holds all shape keys.
     copyObject = obj.copy()
     scene.collection.objects.link(copyObject)
@@ -257,6 +260,8 @@ def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=Tr
                 for key, val in mod.items():
                     try: setattr(m, key, val)
                     except Exception as e: pass
+
+    obj.hide_set(originalHide)
 
     # Recover selected objects
     bpy.ops.object.select_all(action='DESELECT')
