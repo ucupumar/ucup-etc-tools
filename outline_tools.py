@@ -77,7 +77,7 @@ def get_outline_material(obj, mod=None):
     if mod and len(obj.data.materials) > 0:
         idx = min(mod.material_offset, len(obj.data.materials)-1)
         mat = obj.data.materials[idx]
-        if OUTLINE_MAT_NAME in mat.name or OUTLINE_MAT_NAME.lower() in mat.name:
+        if mat and (OUTLINE_MAT_NAME in mat.name or OUTLINE_MAT_NAME.lower() in mat.name):
             return mat
 
     return None
