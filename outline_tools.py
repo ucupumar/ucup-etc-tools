@@ -29,7 +29,8 @@ def get_outline_mat(col, bsdf_type):
         mix_1 = tree.nodes.new('ShaderNodeMixShader')
         mix_2 = tree.nodes.new('ShaderNodeMixShader')
 
-        outp = tree.nodes.get('Material Output')
+        try: outp = [n for n in mat.node_tree.nodes if n.type == 'OUTPUT_MATERIAL' and n.is_active_output][0]
+        except: return None
 
         path.location = (0, 0)
         geom.location = (0, -350)
@@ -110,7 +111,8 @@ def get_first_link_and_mix_node(mat, dif_bsdf=None, emi_bsdf=None):
     return None, None
 
 def get_last_mix_node(mat):
-    outp = mat.node_tree.nodes.get('Material Output')
+    try: outp = [n for n in mat.node_tree.nodes if n.type == 'OUTPUT_MATERIAL' and n.is_active_output][0]
+    except: return None
     if any(outp.inputs[0].links):
         l = outp.inputs[0].links[0]
         if l.from_node.bl_idname == 'ShaderNodeMixShader':
