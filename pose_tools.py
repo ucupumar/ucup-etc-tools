@@ -978,7 +978,7 @@ class YLoopKeyframes(bpy.types.Operator):
     def execute(self, context):
         obj = context.object
         scene = context.scene
-        
+
         active_bone = None
         if self.active_bone_only:
             if obj.mode == 'POSE':
@@ -988,6 +988,8 @@ class YLoopKeyframes(bpy.types.Operator):
                 self.report({'ERROR'}, "Must select a pose bone!")
                 return {'CANCELLED'}
 
+            objects = [obj]
+        elif context.area.type == 'DOPESHEET_EDITOR' and context.space_data.ui_mode != 'DOPESHEET':
             objects = [obj]
         else:
             objects = context.view_layer.objects
@@ -1023,7 +1025,9 @@ class YLoopKeyframes(bpy.types.Operator):
                         if int(kp.co[0]) == scene.frame_current:
                             kp0 = kp
                             index = j
-                            break
+                            # Insert keyframe first to make sure
+                            # Set keyframe
+                            parents[i].keyframe_insert(data_path=fc.data_path, index=fc.array_index, frame=scene.frame_current)
                     else:
                         # Get the first keyframe
                         if kp.select_control_point:
