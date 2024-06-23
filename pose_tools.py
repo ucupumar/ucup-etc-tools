@@ -1004,7 +1004,7 @@ class YLoopKeyframes(bpy.types.Operator):
                 actions.append(obj.animation_data.action)
                 parent_strings.append('bpy.data.objects["'+ obj.name +'"].')
                 parents.append(obj)
-            if obj.type == 'MESH' and obj.data and obj.data.shape_keys and obj.data.shape_keys.animation_data:
+            if obj.type == 'MESH' and obj.data and obj.data.shape_keys and obj.data.shape_keys.animation_data and obj.data.shape_keys.animation_data.action:
                 anim_objects.append(obj)
                 actions.append(obj.data.shape_keys.animation_data.action)
                 parent_strings.append('bpy.data.objects["'+ obj.name +'"].data.shape_keys.')
