@@ -958,6 +958,122 @@ class YApplyArmature(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class YLoopKeyframes(bpy.types.Operator):
+    bl_idname = "pose.y_loop_keyframes"
+    bl_label = "Loop Keyframes"
+    bl_description = "Loop keyframes for the first 2 keyframes of selected pose bones"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.object and context.object.mode == 'POSE'
+
+    def execute(self, context):
+        obj = context.object
+        scene = context.scene
+        
+        #print(context.active_pose_bone)
+        posebones = context.selected_pose_bones
+
+        if len(posebones) == 0:
+            self.report({'ERROR'}, "Should select at least one pose bone!")
+            return {'CANCELLED'}
+
+        # Construct data path prefixes
+        for posebone in posebones:
+            prefix = 'pose.bones["' + posebone.name + '"].'
+
+            frame0 = None
+            frame1 = None
+            step = None
+
+            for fc in obj.animation_data.action.fcurves:
+                if not fc.data_path.startswith(prefix): continue
+
+                # Skip fcurve if there is less than 2 keyframes
+                if len(fc.keyframe_points) < 2: continue
+
+                prop = fc.data_path.replace(prefix, '')
+
+                # Get first two keyframes
+                if frame0 == None and frame1 == None and step == None:
+                    kp0 = fc.keyframe_points[0]
+                    kp1 = fc.keyframe_points[1]
+
+                    # Get frame step
+                    frame0 = int(kp0.co[0])
+                    frame1 = int(kp1.co[0])
+                    step = frame1 - frame0
+
+                else:
+                    for kp in fc.keyframe_points:
+                        if int(kp.co[0]) == frame0:
+                            kp0 = kp
+                        elif int(kp.co[0]) == frame1:
+                            kp1 = kp
+
+                # Store all relevant frames
+                frames = [frame0, frame1]
+
+                # Get frame value
+                val0 = kp0.co[1]
+                val1 = kp1.co[1]
+
+                # Loop forward
+                val = val1
+                frame = frame1
+
+                while True:
+                    frame += step
+
+                    # Toggle values
+                    val = val1 if val == val0 else val0
+
+                    # Set value
+                    attr = getattr(posebone, prop)
+                    attr[fc.array_index] = val
+
+                    # Set keyframe
+                    obj.keyframe_insert(data_path=fc.data_path, frame=frame)
+
+                    if frame not in frames:
+                        frames.append(frame)
+
+                    if frame > scene.frame_end:
+                        break
+
+                # Loop backward
+                if frame0 > scene.frame_start:
+                    val = val0
+                    frame = frame0
+
+                    while True:
+                        frame -= step
+
+                        # Toggle values
+                        val = val1 if val == val0 else val0
+
+                        # Set value
+                        attr = getattr(posebone, prop)
+                        attr[fc.array_index] = val
+
+                        # Set keyframe
+                        obj.keyframe_insert(data_path=fc.data_path, frame=frame)
+
+                        if frame not in frames:
+                            frames.append(frame)
+
+                        if frame < scene.frame_start:
+                            break
+
+                # Delete other irrelevant keyframes
+                for kp in reversed(fc.keyframe_points):
+                    if int(kp.co[0]) not in frames:
+                        obj.keyframe_delete(data_path=fc.data_path, index=fc.array_index, frame=int(kp.co[0]))
+
+
+        return {'FINISHED'}
+
 class YAppliedBone(bpy.types.PropertyGroup):
     name : StringProperty(default='')
     scale : FloatVectorProperty(
@@ -977,6 +1093,7 @@ def register():
     bpy.utils.register_class(YApplyRigifyDeform)
     bpy.utils.register_class(YApplyArmature)
     bpy.utils.register_class(YAppliedBone)
+    bpy.utils.register_class(YLoopKeyframes)
 
     bpy.types.Armature.y_applied_bones = CollectionProperty(type=YAppliedBone)
 
@@ -987,3 +1104,4 @@ def unregister():
     bpy.utils.unregister_class(YApplyRigifyDeform)
     bpy.utils.unregister_class(YApplyArmature)
     bpy.utils.unregister_class(YAppliedBone)
+    bpy.utils.unregister_class(YLoopKeyframes)

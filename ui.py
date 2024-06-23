@@ -92,6 +92,16 @@ class UCUPTOOLS_PT_advanced(bpy.types.Panel):
         c.operator('object.y_apply_rigify_to_metarig', icon='ARMATURE_DATA', text='Apply Rigify to Metarig')
         c.operator('object.y_apply_rigiy_deform', icon='ARMATURE_DATA', text='Apply Rigify Deform')
 
+class UCUPTOOLS_PT_keyframes(bpy.types.Panel):
+    bl_label = "Keyframes"
+    bl_space_type = "DOPESHEET_EDITOR"
+    bl_region_type = "UI"
+    bl_category = "Ucup Etc"
+
+    def draw(self, context):
+        c = self.layout.column()
+        c.operator('pose.y_loop_keyframes', icon='ARMATURE_DATA', text='Loop Keyframes')
+
 class UCUPTOOLS_PT_mesh_tools(bpy.types.Panel):
     bl_label = "Mesh Tools"
     bl_space_type = "VIEW_3D"
@@ -133,6 +143,7 @@ def register():
     bpy.utils.register_class(UCUPTOOLS_PT_item_tools)
     bpy.utils.register_class(UCUPTOOLS_PT_outline_tools)
     bpy.utils.register_class(UCUPTOOLS_PT_advanced)
+    bpy.utils.register_class(UCUPTOOLS_PT_keyframes)
 
 def unregister():
     bpy.utils.unregister_class(UCUPTOOLS_PT_pose_helper)
@@ -143,3 +154,4 @@ def unregister():
     bpy.utils.unregister_class(UCUPTOOLS_PT_item_tools)
     bpy.utils.unregister_class(UCUPTOOLS_PT_outline_tools)
     bpy.utils.unregister_class(UCUPTOOLS_PT_advanced)
+    bpy.utils.unregister_class(UCUPTOOLS_PT_keyframes)
