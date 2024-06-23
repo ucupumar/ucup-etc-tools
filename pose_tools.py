@@ -964,113 +964,117 @@ class YLoopKeyframes(bpy.types.Operator):
     bl_description = "Loop keyframes for the first 2 keyframes of selected pose bones"
     bl_options = {'REGISTER', 'UNDO'}
 
+    active_bone_only = BoolProperty(default=False)
+
     @classmethod
     def poll(cls, context):
-        return context.object and context.object.mode == 'POSE'
+        return context.object #and context.object.mode == 'POSE'
 
     def execute(self, context):
         obj = context.object
         scene = context.scene
         
+        #posebones = context.selected_pose_bones
         #print(context.active_pose_bone)
-        posebones = context.selected_pose_bones
+        #return {'FINISHED'}
 
-        if len(posebones) == 0:
-            self.report({'ERROR'}, "Should select at least one pose bone!")
-            return {'CANCELLED'}
+        # Get selected keyframes
+        for fc in obj.animation_data.action.fcurves:
+            if len(fc.keyframe_points) < 2: continue
 
-        # Construct data path prefixes
-        for posebone in posebones:
-            prefix = 'pose.bones["' + posebone.name + '"].'
+            # Get the first selected keyframe
+            kp0 = None
+            index = 0
+            for i, kp in enumerate(fc.keyframe_points):
+                if kp.select_control_point:
+                    kp0 = kp
+                    index = i
+                    break
 
-            frame0 = None
-            frame1 = None
-            step = None
+            if not kp0: continue
 
-            for fc in obj.animation_data.action.fcurves:
-                if not fc.data_path.startswith(prefix): continue
+            # Get path prop
+            prop = fc.data_path.split('.')[-1]
+            entity_str = fc.data_path.split('.' + prop)[0]
+            entity = eval('obj.' + entity_str)
+            attr = getattr(entity, prop)
 
-                # Skip fcurve if there is less than 2 keyframes
-                if len(fc.keyframe_points) < 2: continue
+            # Get the second keyframe next to first keyframe
+            if index != len(fc.keyframe_points)-1:
+                kp1 = fc.keyframe_points[index+1]
+            else: 
+                kp0 = fc.keyframe_points[index-1]
+                kp1 = fc.keyframe_points[index]
 
-                prop = fc.data_path.replace(prefix, '')
+            # Get frame step
+            frame0 = int(kp0.co[0])
+            frame1 = int(kp1.co[0])
+            step = frame1 - frame0
 
-                # Get first two keyframes
-                if frame0 == None and frame1 == None and step == None:
-                    kp0 = fc.keyframe_points[0]
-                    kp1 = fc.keyframe_points[1]
+            # Store all relevant frames
+            frames = [frame0, frame1]
 
-                    # Get frame step
-                    frame0 = int(kp0.co[0])
-                    frame1 = int(kp1.co[0])
-                    step = frame1 - frame0
+            # Get frame value
+            val0 = kp0.co[1]
+            val1 = kp1.co[1]
 
-                else:
-                    for kp in fc.keyframe_points:
-                        if int(kp.co[0]) == frame0:
-                            kp0 = kp
-                        elif int(kp.co[0]) == frame1:
-                            kp1 = kp
+            # Loop forward
+            val = val1
+            frame = frame1
 
-                # Store all relevant frames
-                frames = [frame0, frame1]
+            while True:
+                frame += step
 
-                # Get frame value
-                val0 = kp0.co[1]
-                val1 = kp1.co[1]
+                # Toggle values
+                val = val1 if val == val0 else val0
 
-                # Loop forward
-                val = val1
-                frame = frame1
+                # Set value
+                attr[fc.array_index] = val
+
+                # Set keyframe
+                obj.keyframe_insert(data_path=fc.data_path, index=fc.array_index, frame=frame)
+
+                if frame not in frames:
+                    frames.append(frame)
+
+                if frame > scene.frame_end:
+                    break
+
+            # Loop backward
+            if frame0 > scene.frame_start:
+                val = val0
+                frame = frame0
 
                 while True:
-                    frame += step
+                    frame -= step
 
                     # Toggle values
                     val = val1 if val == val0 else val0
 
                     # Set value
-                    attr = getattr(posebone, prop)
                     attr[fc.array_index] = val
 
                     # Set keyframe
-                    obj.keyframe_insert(data_path=fc.data_path, frame=frame)
+                    obj.keyframe_insert(data_path=fc.data_path, index=fc.array_index, frame=frame)
 
                     if frame not in frames:
                         frames.append(frame)
 
-                    if frame > scene.frame_end:
+                    if frame < scene.frame_start:
                         break
 
-                # Loop backward
-                if frame0 > scene.frame_start:
-                    val = val0
-                    frame = frame0
+            # Delete other irrelevant keyframes
+            for kp in reversed(fc.keyframe_points):
+                if int(kp.co[0]) not in frames:
+                    obj.keyframe_delete(data_path=fc.data_path, index=fc.array_index, frame=int(kp.co[0]))
+                # Deselect generated keyframes
+                elif int(kp.co[0]) not in {frame0, frame1}:
+                    kp.select_control_point = False
+                    kp.select_left_handle = False
+                    kp.select_right_handle = False
 
-                    while True:
-                        frame -= step
-
-                        # Toggle values
-                        val = val1 if val == val0 else val0
-
-                        # Set value
-                        attr = getattr(posebone, prop)
-                        attr[fc.array_index] = val
-
-                        # Set keyframe
-                        obj.keyframe_insert(data_path=fc.data_path, frame=frame)
-
-                        if frame not in frames:
-                            frames.append(frame)
-
-                        if frame < scene.frame_start:
-                            break
-
-                # Delete other irrelevant keyframes
-                for kp in reversed(fc.keyframe_points):
-                    if int(kp.co[0]) not in frames:
-                        obj.keyframe_delete(data_path=fc.data_path, index=fc.array_index, frame=int(kp.co[0]))
-
+            # Update current frame value
+            attr[fc.array_index] = fc.evaluate(scene.frame_current)
 
         return {'FINISHED'}
 
