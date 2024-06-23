@@ -100,7 +100,17 @@ class UCUPTOOLS_PT_keyframes(bpy.types.Panel):
 
     def draw(self, context):
         c = self.layout.column()
-        c.operator('pose.y_loop_keyframes', icon='ARMATURE_DATA', text='Loop Keyframes')
+        c.operator('pose.y_loop_keyframes', icon='ARMATURE_DATA', text='Loop Selected Keyframes').active_bone_only = False
+
+class UCUPTOOLS_PT_VIEW_3D_keyframes(bpy.types.Panel):
+    bl_label = "Keyframes"
+    bl_space_type = "VIEW_3D"
+    bl_region_type = "UI"
+    bl_category = "Ucup Etc"
+
+    def draw(self, context):
+        c = self.layout.column()
+        c.operator('pose.y_loop_keyframes', icon='ARMATURE_DATA', text='Loop Active Bone Keyframe').active_bone_only = True
 
 class UCUPTOOLS_PT_mesh_tools(bpy.types.Panel):
     bl_label = "Mesh Tools"
@@ -144,6 +154,7 @@ def register():
     bpy.utils.register_class(UCUPTOOLS_PT_outline_tools)
     bpy.utils.register_class(UCUPTOOLS_PT_advanced)
     bpy.utils.register_class(UCUPTOOLS_PT_keyframes)
+    bpy.utils.register_class(UCUPTOOLS_PT_VIEW_3D_keyframes)
 
 def unregister():
     bpy.utils.unregister_class(UCUPTOOLS_PT_pose_helper)
@@ -155,3 +166,4 @@ def unregister():
     bpy.utils.unregister_class(UCUPTOOLS_PT_outline_tools)
     bpy.utils.unregister_class(UCUPTOOLS_PT_advanced)
     bpy.utils.unregister_class(UCUPTOOLS_PT_keyframes)
+    bpy.utils.unregister_class(UCUPTOOLS_PT_VIEW_3D_keyframes)

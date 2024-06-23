@@ -964,7 +964,10 @@ class YLoopKeyframes(bpy.types.Operator):
     bl_description = "Loop keyframes for the first 2 keyframes of selected pose bones"
     bl_options = {'REGISTER', 'UNDO'}
 
-    active_bone_only = BoolProperty(default=False)
+    active_bone_only : BoolProperty(
+            name = 'Active Bone Only',
+            description = 'Loop keyframes only on active bone only',
+            default=False)
 
     @classmethod
     def poll(cls, context):
@@ -974,9 +977,14 @@ class YLoopKeyframes(bpy.types.Operator):
         obj = context.object
         scene = context.scene
         
-        #posebones = context.selected_pose_bones
-        #print(context.active_pose_bone)
-        #return {'FINISHED'}
+        active_bone = None
+        if self.active_bone_only:
+            if obj.mode == 'POSE':
+                active_bone = context.active_pose_bone
+
+            if not active_bone:
+                self.report({'ERROR'}, "Must select a pose bone!")
+                return {'CANCELLED'}
 
         # Get selected keyframes
         for fc in obj.animation_data.action.fcurves:
@@ -986,10 +994,18 @@ class YLoopKeyframes(bpy.types.Operator):
             kp0 = None
             index = 0
             for i, kp in enumerate(fc.keyframe_points):
-                if kp.select_control_point:
-                    kp0 = kp
-                    index = i
-                    break
+                if active_bone:
+                    # Only active bone will use keyframe on current frame rather than selected keyframe
+                    if int(kp.co[0]) == scene.frame_current:
+                        kp0 = kp
+                        index = i
+                        break
+                else:
+                    # Get the first keyframe
+                    if kp.select_control_point:
+                        kp0 = kp
+                        index = i
+                        break
 
             if not kp0: continue
 
@@ -998,6 +1014,9 @@ class YLoopKeyframes(bpy.types.Operator):
             entity_str = fc.data_path.split('.' + prop)[0]
             entity = eval('obj.' + entity_str)
             attr = getattr(entity, prop)
+
+            if active_bone and entity_str != 'pose.bones["' + active_bone.name + '"]':
+                continue
 
             # Get the second keyframe next to first keyframe
             if index != len(fc.keyframe_points)-1:
@@ -1063,10 +1082,12 @@ class YLoopKeyframes(bpy.types.Operator):
                     if frame < scene.frame_start:
                         break
 
-            # Delete other irrelevant keyframes
             for kp in reversed(fc.keyframe_points):
+
+                # Delete other irrelevant keyframes
                 if int(kp.co[0]) not in frames:
                     obj.keyframe_delete(data_path=fc.data_path, index=fc.array_index, frame=int(kp.co[0]))
+
                 # Deselect generated keyframes
                 elif int(kp.co[0]) not in {frame0, frame1}:
                     kp.select_control_point = False
