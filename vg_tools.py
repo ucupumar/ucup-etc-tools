@@ -252,12 +252,56 @@ class YTransferWeightsAndSetup(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class YWeightPaintEnableSelectBones(bpy.types.Operator):
+    bl_idname = "mesh.y_weight_paint_enable_select_bones"
+    bl_label = "Weight Paint with Bones Selection Mode"
+    bl_description = "Enable select bones mode on weight paint"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.object and context.object.type == 'MESH'
+
+    def execute(self, context):
+        obj = context.object
+
+        rig = None
+
+        # Search for the rig
+        for mod in obj.modifiers:
+            if mod.type == 'ARMATURE':
+                if mod.object:
+                    rig = mod.object
+                    break
+
+        if not rig:
+            self.report({'ERROR'}, "No armature object found!")
+            return {'CANCELLED'}
+
+        # Go to weight paint mode
+        if obj.mode != 'WEIGHT_PAINT':
+            bpy.ops.object.mode_set(mode='WEIGHT_PAINT')
+
+        # Select rig object
+        context.view_layer.objects.active = rig
+        rig.select_set(True)
+
+        # Go to pose mode
+        bpy.ops.object.mode_set(mode='POSE')
+
+        # Back to original object
+        context.view_layer.objects.active = obj
+
+        return {'FINISHED'}
+
 def register():
     bpy.utils.register_class(YRemoveunusedVG)
     bpy.utils.register_class(YMergeVGDown)
     bpy.utils.register_class(YTransferWeightsAndSetup)
+    bpy.utils.register_class(YWeightPaintEnableSelectBones)
 
 def unregister():
     bpy.utils.unregister_class(YRemoveunusedVG)
     bpy.utils.unregister_class(YMergeVGDown)
     bpy.utils.unregister_class(YTransferWeightsAndSetup)
+    bpy.utils.unregister_class(YWeightPaintEnableSelectBones)

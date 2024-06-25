@@ -72,6 +72,7 @@ class UCUPTOOLS_PT_vg_tools(bpy.types.Panel):
         c.operator('mesh.y_remove_unused_vertex_groups', icon='MESH_DATA', text='Remove Unused Vertex Groups')
         c.operator('mesh.y_merge_vg_down', icon='MESH_DATA', text='Merge Vertex Group Down')
         c.operator('mesh.y_transfer_weights_and_setup', icon='MESH_DATA', text='Transfer Weights and Armature')
+        c.operator('mesh.y_weight_paint_enable_select_bones', icon='ARMATURE_DATA') #, text='Enable Select Bones Mode')
 
 class UCUPTOOLS_PT_advanced(bpy.types.Panel):
     bl_label = "Advanced"
