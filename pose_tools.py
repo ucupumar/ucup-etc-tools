@@ -2,7 +2,7 @@ import bpy, bmesh
 from bpy.props import *
 from .common import *
 from mathutils import *
-from bpy_types import bpy_types
+import bpy_types
 
 class YToggleRestPos(bpy.types.Operator):
     bl_idname = "object.y_toggle_rest_pos"
