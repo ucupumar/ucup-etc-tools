@@ -183,12 +183,13 @@ def set_armature_back(context, rig, objs, child_objs, ori_mod_props, parent_bone
     bpy.ops.object.mode_set(mode='POSE')
     bpy.ops.pose.select_all(action='DESELECT')
 
+    ori_visibilities = []
     if back_to_rigify:
         if is_greater_than_400():
-            if 'Layer 30' in rig.data.collections:
-                rig.data.collections['Layer 30'].is_visible = True
-            elif 'DEF' in rig.data.collections:
-                rig.data.collections['DEF'].is_visible = True
+            # Make all collection visible
+            for i, col in enumerate(rig.data.collections):
+                ori_visibilities.append(col.is_visible)
+                col.is_visible = True
         else: rig.data.layers[29] = True
 
     for i, o in enumerate(child_objs):
@@ -223,10 +224,10 @@ def set_armature_back(context, rig, objs, child_objs, ori_mod_props, parent_bone
 
     if back_to_rigify:
         if is_greater_than_400():
-            if 'Layer 30' in rig.data.collections:
-                rig.data.collections['Layer 30'].is_visible = False
-            elif 'DEF' in rig.data.collections:
-                rig.data.collections['DEF'].is_visible = False
+            # Revert back collection visibility
+            for i, val in enumerate(ori_visibilities):
+                if rig.data.collections[i].is_visible != val:
+                    rig.data.collections[i].is_visible = val
         else: rig.data.layers[29] = False
 
     bpy.ops.object.mode_set(mode='OBJECT')
