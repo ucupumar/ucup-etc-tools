@@ -282,7 +282,7 @@ def yetc_toggle_object_outline(scene):
 
     obj = bpy.context.object
 
-    if obj.yetc.last_mode != obj.mode:
+    if obj and obj.yetc.last_mode != obj.mode:
         if obj.mode == 'TEXTURE_PAINT':
             mod = get_outline_modifier(obj)
             if mod and mod.show_viewport:
