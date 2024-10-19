@@ -339,4 +339,4 @@ def unregister():
     bpy.utils.unregister_class(YETCSceneProps)
     bpy.utils.unregister_class(YETCObjectProps)
 
-    bpy.app.handlers.depsgraph_update_post.remove(yetc_last_object_update)
+    bpy.app.handlers.depsgraph_update_post.remove(yetc_toggle_object_outline)
