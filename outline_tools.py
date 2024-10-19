@@ -1,5 +1,6 @@
 import bpy
 from bpy.props import *
+from bpy.app.handlers import persistent
 
 OUTLINE_MAT_NAME = 'Outline'
 
@@ -265,6 +266,37 @@ class YAddOutline(bpy.types.Operator):
 
         return {'FINISHED'}
 
+class YETCSceneProps(bpy.types.PropertyGroup):
+    hide_outline_while_texture_paint : BoolProperty(
+            name = 'Hide Outline while Texture Paint',
+            description = 'Hide outline modifier while texture painting since it won\'t work with mirrored uv',
+            default = False)
+
+class YETCObjectProps(bpy.types.PropertyGroup):
+    last_mode : StringProperty(default='')
+    outline_mod_name : StringProperty(default='')
+
+@persistent
+def yetc_toggle_object_outline(scene):
+    if not scene.yetc.hide_outline_while_texture_paint: return
+
+    obj = bpy.context.object
+
+    if obj.yetc.last_mode != obj.mode:
+        if obj.mode == 'TEXTURE_PAINT':
+            print('INTO TEXTURE PAINT')
+            mod = get_outline_modifier(obj)
+            if mod and mod.show_viewport:
+                obj.yetc.outline_mod_name = mod.name
+                mod.show_viewport = False
+        elif obj.yetc.last_mode == 'TEXTURE_PAINT':
+            print('OUT OF TEXTURE PAINT')
+            if obj.yetc.outline_mod_name != '':
+                mod = obj.modifiers.get(obj.yetc.outline_mod_name)
+                if mod: mod.show_viewport = True
+            obj.yetc.outline_mod_name = ''
+        obj.yetc.last_mode = obj.mode
+
 class YRemoveOutline(bpy.types.Operator):
     bl_idname = "object.y_remove_outline"
     bl_label = "Remove Outline"
@@ -293,7 +325,18 @@ class YRemoveOutline(bpy.types.Operator):
 def register():
     bpy.utils.register_class(YAddOutline)
     bpy.utils.register_class(YRemoveOutline)
+    bpy.utils.register_class(YETCSceneProps)
+    bpy.utils.register_class(YETCObjectProps)
+
+    bpy.types.Scene.yetc = PointerProperty(type=YETCSceneProps)
+    bpy.types.Object.yetc = PointerProperty(type=YETCObjectProps)
+
+    bpy.app.handlers.depsgraph_update_post.append(yetc_toggle_object_outline)
 
 def unregister():
     bpy.utils.unregister_class(YAddOutline)
     bpy.utils.unregister_class(YRemoveOutline)
+    bpy.utils.unregister_class(YETCSceneProps)
+    bpy.utils.unregister_class(YETCObjectProps)
+
+    bpy.app.handlers.depsgraph_update_post.remove(yetc_last_object_update)
