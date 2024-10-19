@@ -284,16 +284,17 @@ def yetc_toggle_object_outline(scene):
 
     if obj.yetc.last_mode != obj.mode:
         if obj.mode == 'TEXTURE_PAINT':
-            print('INTO TEXTURE PAINT')
             mod = get_outline_modifier(obj)
             if mod and mod.show_viewport:
                 obj.yetc.outline_mod_name = mod.name
                 mod.show_viewport = False
+                print('UCUP ETC: Outline modifier is disabled while on Texture Paint Mode')
         elif obj.yetc.last_mode == 'TEXTURE_PAINT':
-            print('OUT OF TEXTURE PAINT')
             if obj.yetc.outline_mod_name != '':
                 mod = obj.modifiers.get(obj.yetc.outline_mod_name)
-                if mod: mod.show_viewport = True
+                if mod: 
+                    mod.show_viewport = True
+                    print('UCUP ETC: Outline modifier is enabled again!')
             obj.yetc.outline_mod_name = ''
         obj.yetc.last_mode = obj.mode
 
