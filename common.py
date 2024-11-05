@@ -271,3 +271,16 @@ def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=Tr
     
     return (True, None)
 
+def is_strokegen_available():
+    scene = bpy.context.scene
+
+    return hasattr(scene, 'npr') and hasattr(scene.npr, 'enable_strokegen')
+
+def get_modifiers_by_type(obj, mod_type):
+    mods = []
+
+    for m in obj.modifiers:
+        if m.type == mod_type:
+            mods.append(m)
+
+    return mods

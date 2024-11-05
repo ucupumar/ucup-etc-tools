@@ -64,6 +64,10 @@ class UCUPTOOLS_PT_outline_tools(bpy.types.Panel):
 
         c.prop(scene.yetc, 'hide_outline_while_texture_paint')
 
+        if is_strokegen_available():
+            c.separator()
+            c.operator('object.y_add_strokegen_outline', icon='OBJECT_DATA', text='Add StrokeGen Outline')
+
 class UCUPTOOLS_PT_vg_tools(bpy.types.Panel):
     bl_label = "Vertex Groups"
     bl_space_type = "VIEW_3D"

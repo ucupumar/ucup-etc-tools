@@ -1,6 +1,7 @@
 import bpy
 from bpy.props import *
 from bpy.app.handlers import persistent
+from .common import *
 
 OUTLINE_MAT_NAME = 'Outline'
 
@@ -119,6 +120,71 @@ def get_last_mix_node(mat):
         if l.from_node.bl_idname == 'ShaderNodeMixShader':
             return l.from_node
     return None
+
+class YAddStrokeGenOutline(bpy.types.Operator):
+    bl_idname = "object.y_add_strokegen_outline"
+    bl_label = "Add Outline"
+    bl_description = "Add StrokeGen outline to selected objects"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    thickness : FloatProperty(
+        name = 'Outline Thickness', 
+        description = 'Thickness of generated outline',
+        default=1.0, min=0.1, max=100.0
+        )
+
+    add_triangulate_modifier : BoolProperty(
+        name = 'Add Triangulate Modifier',
+        description = 'Strokegen works better with triangulate modifier',
+        default = True
+        )
+
+    @classmethod
+    def poll(cls, context):
+        return context.object and context.object.type == 'MESH' and is_strokegen_available()
+
+    def invoke(self, context, event):
+        return context.window_manager.invoke_props_dialog(self) #, width=420)
+
+    def draw(self, context):
+        obj = context.object
+        self.layout.prop(self, 'thickness')
+        self.layout.prop(self, 'add_triangulate_modifier')
+
+    def execute(self, context):
+        scene = context.scene
+        objs = context.selected_objects
+        npr = scene.npr
+
+        # StrokeGen global settings
+        if not npr.enable_strokegen:
+            npr.enable_strokegen = True
+        npr.global_curve_width = 1.0
+
+        for o in objs:
+            if o.type != 'MESH': continue
+
+            # StrokeGen object settings
+            if not o.strokegen.contour:
+                o.strokegen.contour = True
+            o.strokegen.curve_width = self.thickness
+
+            # Disable traditional solidify modifiers
+            m = get_outline_modifier(o)
+            if m:
+                m.show_viewport = False
+                m.show_render = False
+
+            # Add triangulate modifier
+            if self.add_triangulate_modifier:
+
+                tria = None
+                trias = get_modifiers_by_type(o, 'TRIANGULATE')
+                if trias: tria = trias[0]
+                if not tria:
+                    tria = o.modifiers.new('Triangulate', 'TRIANGULATE')
+
+        return {'FINISHED'}
 
 class YAddOutline(bpy.types.Operator):
     bl_idname = "object.y_add_outline"
@@ -325,6 +391,7 @@ class YRemoveOutline(bpy.types.Operator):
 
 def register():
     bpy.utils.register_class(YAddOutline)
+    bpy.utils.register_class(YAddStrokeGenOutline)
     bpy.utils.register_class(YRemoveOutline)
     bpy.utils.register_class(YETCSceneProps)
     bpy.utils.register_class(YETCObjectProps)
@@ -336,6 +403,7 @@ def register():
 
 def unregister():
     bpy.utils.unregister_class(YAddOutline)
+    bpy.utils.unregister_class(YAddStrokeGenOutline)
     bpy.utils.unregister_class(YRemoveOutline)
     bpy.utils.unregister_class(YETCSceneProps)
     bpy.utils.unregister_class(YETCObjectProps)
