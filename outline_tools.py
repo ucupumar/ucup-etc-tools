@@ -157,8 +157,8 @@ class YAddStrokeGenOutline(bpy.types.Operator):
         npr = scene.npr
 
         # StrokeGen global settings
-        if not npr.enable_strokegen:
-            npr.enable_strokegen = True
+        if npr.disable_strokegen:
+            npr.disable_strokegen = False
         npr.global_curve_width = 1.0
 
         for o in objs:
@@ -167,13 +167,20 @@ class YAddStrokeGenOutline(bpy.types.Operator):
             # StrokeGen object settings
             if not o.strokegen.contour:
                 o.strokegen.contour = True
-            o.strokegen.curve_width = self.thickness
 
             # Disable traditional solidify modifiers
             m = get_outline_modifier(o)
+            outline_mat_idx = -1
             if m:
                 m.show_viewport = False
                 m.show_render = False
+
+                outline_mat_idx = m.material_offset
+
+            for i, m in enumerate(o.data.materials):
+                if not m or i == outline_mat_idx: continue
+                m.strokegen.used_for_strokegen = True
+                m.strokegen.curve_width = self.thickness
 
             # Add triangulate modifier
             if self.add_triangulate_modifier:
