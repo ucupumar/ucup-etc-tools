@@ -2,7 +2,6 @@ import bpy, bmesh
 from bpy.props import *
 from .common import *
 from mathutils import *
-import bpy_types
 
 class YToggleRestPos(bpy.types.Operator):
     bl_idname = "object.y_toggle_rest_pos"
@@ -1071,7 +1070,7 @@ class YLoopKeyframes(bpy.types.Operator):
                 frame = frame1
 
                 # Check if it's array or not
-                array_index = fc.array_index if type(attr) in {bpy_types.bpy_prop_array, Vector, Quaternion} else -1
+                array_index = fc.array_index if type(attr) in {bpy.types.bpy_prop_array, Vector, Quaternion} else -1
 
                 while True:
                     frame += step
