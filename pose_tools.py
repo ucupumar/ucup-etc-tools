@@ -1,4 +1,4 @@
-import bpy, bmesh
+import bpy, bmesh, re
 from bpy.props import *
 from .common import *
 from mathutils import *
@@ -232,6 +232,19 @@ def set_armature_back(context, rig, objs, child_objs, ori_mod_props, parent_bone
     bpy.ops.object.mode_set(mode='OBJECT')
     bpy.ops.object.select_all(action='DESELECT')
 
+def register_rig_script(rig_id, unregister=False):
+    # Get script
+    for text in bpy.data.texts:
+        if text.name.endswith('_ui.py'):
+
+            # Search for rig id
+            lines = [l.body for l in text.lines if l.body.startswith('rig_id = ')]
+            if not lines: continue
+            m = re.match(r'^rig_id = "(.+)"', lines[0])
+            if m and m.group(1) == rig_id:
+                text.use_module = not unregister
+                break
+
 class YAppyRigifyToMetarig(bpy.types.Operator):
     bl_idname = "object.y_apply_rigify_to_metarig"
     bl_label = "Apply Rigify to Metarig"
@@ -364,6 +377,7 @@ class YApplyRigifyDeform(bpy.types.Operator):
 
         scene = context.scene
         ori = context.object
+        rig_id = ori.data['rig_id'] if 'rig_id' in ori.data else ''
 
         # RECOVER RIG
 
@@ -376,6 +390,7 @@ class YApplyRigifyDeform(bpy.types.Operator):
             rig.hide_set(False)
             rig.hide_viewport = False
             rig.data.pose_position = 'REST'
+            rig_id = rig.data['rig_id']
 
             # Get objects using rig
             objs, armods, ori_mod_props, ori_mod_idx, child_objs, parent_bones = get_all_objects_using_rig_with_datas(ori)
@@ -452,6 +467,9 @@ class YApplyRigifyDeform(bpy.types.Operator):
             rig.select_set(True)
 
             rig.data.pose_position = 'POSE'
+
+            # Register script
+            register_rig_script(rig_id)
 
             return {'FINISHED'}
 
@@ -562,6 +580,9 @@ class YApplyRigifyDeform(bpy.types.Operator):
         bpy.ops.pose.armature_apply(selected=False)
 
         #return {'FINISHED'}
+
+        # Unregister script
+        register_rig_script(rig_id, unregister=True)
 
         # Remove constraints
         bpy.ops.object.mode_set(mode='POSE')

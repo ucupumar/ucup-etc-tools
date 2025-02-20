@@ -141,6 +141,10 @@ def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=Tr
 
     # Handle base shape in original object
     print("apply_modifiers_with_shape_keys: Applying base shape key")
+
+    # Make sure active shape key index is set to avoid error
+    obj.active_shape_key_index = 0
+
     bpy.ops.object.shape_key_remove(all=True)
     for modifierName in selectedModifiers:
         try: bpy.ops.object.modifier_apply(modifier=modifierName)
