@@ -369,7 +369,8 @@ def yetc_toggle_object_outline(scene):
                     mod.show_viewport = True
                     print('UCUP ETC: Outline modifier is enabled again!')
             obj.yetc.outline_mod_name = ''
-        obj.yetc.last_mode = obj.mode
+        try: obj.yetc.last_mode = obj.mode
+        except Exception as e: print('ETC EXCEPTION: Can\'t set last mode')
 
 class YRemoveOutline(bpy.types.Operator):
     bl_idname = "object.y_remove_outline"
