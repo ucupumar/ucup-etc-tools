@@ -13,8 +13,8 @@ def get_outline_mat(col, bsdf_type):
         tree = mat.node_tree
 
         mat.use_backface_culling = True
-        mat.blend_method = 'HASHED'
-        mat.shadow_method = 'HASHED'
+        if hasattr(mat, 'blend_method'): mat.blend_method = 'HASHED'
+        if hasattr(mat, 'shadow_method'): mat.shadow_method = 'HASHED'
 
         # Remove default principled bsdf
         bsdf = tree.nodes.get('Principled BSDF')
