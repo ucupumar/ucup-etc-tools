@@ -234,7 +234,7 @@ class YTransferWeightsAndSetup(bpy.types.Operator):
                         o.parent_type = 'OBJECT'
 
             if self.do_normalize:
-                if is_greater_than_400(): 
+                if is_bl_newer_than(4): 
                     bpy.ops.object.vertex_group_normalize_all(group_select_mode='ALL')
                 else: bpy.ops.object.vertex_group_normalize_all(group_select_mode='BONE_DEFORM')
 

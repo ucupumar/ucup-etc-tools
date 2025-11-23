@@ -145,7 +145,7 @@ class UCUPTOOLS_PT_subdiv_tools(bpy.types.Panel):
     def draw(self, context):
         c = self.layout.column()
         label ='Make Subsurf Last' 
-        if not is_greater_than_410():
+        if not is_bl_newer_than(4, 1):
             label += ' & Disable Autosmooth'
         c.operator('mesh.y_make_subsurf_last', icon='MOD_SUBSURF', text=label)
         c.alert = bpy.app.version >= (3, 1, 0) and context.preferences.system.use_gpu_subdivision

@@ -3,6 +3,11 @@ from bpy.props import *
 from .common import *
 from mathutils import *
 
+def set_posebone_select(pbone, value):
+    if is_bl_newer_than(5):
+        pbone.select = value
+    else: pbone.bone.select = value
+
 class YToggleRestPos(bpy.types.Operator):
     bl_idname = "object.y_toggle_rest_pos"
     bl_label = "Toggle Rig Rest Position"
@@ -184,7 +189,7 @@ def set_armature_back(context, rig, objs, child_objs, ori_mod_props, parent_bone
 
     ori_visibilities = []
     if back_to_rigify:
-        if is_greater_than_400():
+        if is_bl_newer_than(4):
             # Make all collection visible
             for i, col in enumerate(rig.data.collections):
                 ori_visibilities.append(col.is_visible)
@@ -213,16 +218,16 @@ def set_armature_back(context, rig, objs, child_objs, ori_mod_props, parent_bone
                     pbone = rig.pose.bones.get(name[4:])
 
         if pbone:
-            pbone.bone.select = True
+            set_posebone_select(pbone, True)
             rig.data.bones.active = pbone.bone
 
             bpy.ops.object.parent_set(type='BONE')
 
             o.select_set(False)
-            pbone.bone.select = False
+            set_posebone_select(pbone, False)
 
     if back_to_rigify:
-        if is_greater_than_400():
+        if is_bl_newer_than(4):
             # Revert back collection visibility
             for i, val in enumerate(ori_visibilities):
                 if rig.data.collections[i].is_visible != val:
@@ -510,7 +515,7 @@ class YApplyRigifyDeform(bpy.types.Operator):
                 bone.constraints.remove(bc)
 
         # Set layer
-        if is_greater_than_400():
+        if is_bl_newer_than(4):
             for c in rig.data.collections:
                 c.is_visible = True
         else:
@@ -658,7 +663,7 @@ class YRegenerateRigify(bpy.types.Operator):
 
         # Enable all layers
         ori_layer_enables = []
-        if is_greater_than_400():
+        if is_bl_newer_than(4):
             for c in rig.data.collections:
                 if c.is_visible: ori_layer_enables.append(c.name)
                 c.is_visible = True
@@ -709,7 +714,7 @@ class YRegenerateRigify(bpy.types.Operator):
         is_old_rigify = False
 
         # Update metarig for Blender 4.0 or above
-        if is_greater_than_400():
+        if is_bl_newer_than(4):
             if 'Layer 1' in metarig.data.collections:
                 is_old_rigify = True
                 bpy.ops.armature.rigify_upgrade_layers()
@@ -745,7 +750,7 @@ class YRegenerateRigify(bpy.types.Operator):
             strip = track.strips.new(act.name, int(frame_starts[i]), act)
 
         # Enable layers
-        if is_greater_than_400():
+        if is_bl_newer_than(4):
             if not is_old_rigify:
                 for c in rig.data.collections:
                     c.is_visible = True if c.name in ori_layer_enables else False
@@ -948,13 +953,13 @@ class YApplyArmature(bpy.types.Operator):
         for i, o in enumerate(child_objs):
             o.select_set(True)
             pbone = rig_obj.pose.bones.get(parent_bones[i])
-            pbone.bone.select = True
+            set_posebone_select(pbone, True)
             rig_obj.data.bones.active = pbone.bone
 
             bpy.ops.object.parent_set(type='BONE')
 
             o.select_set(False)
-            pbone.bone.select = False
+            set_posebone_select(pbone, False)
 
         bpy.ops.object.mode_set(mode='OBJECT')
         bpy.ops.object.select_all(action='DESELECT')
