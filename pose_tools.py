@@ -1096,7 +1096,7 @@ class YLoopKeyframes(bpy.types.Operator):
                 frame = frame1
 
                 # Check if it's array or not
-                array_index = fc.array_index if type(attr) in {bpy.types.bpy_prop_array, Vector, Quaternion} else -1
+                array_index = fc.array_index if type(attr) in {bpy.types.bpy_prop_array, Vector, Quaternion, Euler} else -1
 
                 while True:
                     frame += step
