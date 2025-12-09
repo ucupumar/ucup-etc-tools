@@ -47,6 +47,60 @@ def copy_props_to_dict(source, target_dict, debug=False):
 
     if debug: print()
 
+def get_datablock_fcurves(obj):
+    if not obj or not obj.animation_data: return []
+
+    action = obj.animation_data.action
+    if not action: return []
+
+    if not is_bl_newer_than(5):
+        return action.fcurves
+
+    from bpy_extras import anim_utils
+
+    # Get action slot first
+    #slots = [s for s in action.slots if s.target_id_type == obj.id_type and obj in s.users()]
+    slots = [s for s in action.slots if obj in s.users()]
+    if not slots: return []
+    slot = slots[0]
+
+    # Get channelbag
+    channelbag = anim_utils.action_get_channelbag_for_slot(action, slot)
+
+    return channelbag.fcurves
+
+def new_fcurve(obj, data_path):
+    if not obj.animation_data:
+        return None
+
+    action = obj.animation_data.action
+
+    if not is_bl_newer_than(5):
+        return action.fcurves.new(data_path=data_path) #, index=2)
+
+    from bpy_extras import anim_utils
+
+    # Create new action slot
+    slot = action.slots.new(id_type=obj.id_type, name=obj.name)
+
+    # Ensure channelbag
+    channelbag = anim_utils.action_ensure_channelbag_for_slot(action, slot)
+    return channelbag.fcurves.new(data_path) #,index=2)
+
+def get_action_fcurves(action):
+    if not is_bl_newer_than(5):
+        return [fc for fc in action.fcurves]
+
+    from bpy_extras import anim_utils
+
+    fcurves = []
+    for slot in action.slots:
+        channelbag = anim_utils.action_get_channelbag_for_slot(action, slot)
+        for fc in channelbag.fcurves:
+            fcurves.append(fc)
+
+    return fcurves
+
 def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=True):
 
     list_properties = []
@@ -124,7 +178,7 @@ def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=Tr
     ori_action_name = ''
     if obj.data.shape_keys.animation_data and obj.data.shape_keys.animation_data.action:
         ori_action_name = obj.data.shape_keys.animation_data.action.name
-        for fc in obj.data.shape_keys.animation_data.action.fcurves:
+        for fc in get_datablock_fcurves(obj):
             fc_dic = {}
 
             for prop in dir(fc):
@@ -233,9 +287,7 @@ def apply_modifiers_with_shape_keys(obj, selectedModifiers, disable_armatures=Tr
         obj.data.shape_keys.animation_data.action = bpy.data.actions.new(name=ori_action_name)
 
         for ofc in ori_fcurves:
-            fcurve = obj.data.shape_keys.animation_data.action.fcurves.new(
-                data_path=ofc['data_path'], #index=2
-            )
+            fcurve = new_fcurve(obj, ofc['data_path'])
 
             for key, val in ofc.items():
                 if key in {'data_path', 'keyframe_points'}: continue
@@ -280,3 +332,4 @@ def get_modifiers_by_type(obj, mod_type):
             mods.append(m)
 
     return mods
+

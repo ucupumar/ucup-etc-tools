@@ -1039,7 +1039,7 @@ class YLoopKeyframes(bpy.types.Operator):
         # Get selected keyframes
         for i, action in enumerate(actions):
             obj = anim_objects[i]
-            for fc in action.fcurves:
+            for fc in get_action_fcurves(action):
                 if len(fc.keyframe_points) < 2: continue
 
                 # Get the first selected keyframe
