@@ -1038,6 +1038,8 @@ class YLoopKeyframes(bpy.types.Operator):
 
         # Get selected keyframes
         for i, action in enumerate(actions):
+            frame_start = action.frame_start if action.use_frame_range else scene.frame_start
+            frame_end = action.frame_end if action.use_frame_range else scene.frame_end
             obj = anim_objects[i]
             for fc in get_action_fcurves(action):
                 if len(fc.keyframe_points) < 2: continue
@@ -1120,11 +1122,11 @@ class YLoopKeyframes(bpy.types.Operator):
                     if frame not in frames:
                         frames.append(frame)
 
-                    if frame > scene.frame_end:
+                    if frame > frame_end:
                         break
 
                 # Loop backward
-                if frame0 > scene.frame_start:
+                if frame0 > frame_start:
                     val = val0
                     frame = frame0
 
@@ -1150,7 +1152,7 @@ class YLoopKeyframes(bpy.types.Operator):
                         if frame not in frames:
                             frames.append(frame)
 
-                        if frame < scene.frame_start:
+                        if frame < frame_start:
                             break
 
                 for kp in reversed(fc.keyframe_points):
