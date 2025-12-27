@@ -61,6 +61,7 @@ class UCUPTOOLS_PT_outline_tools(bpy.types.Panel):
         c = self.layout.column()
         c.operator('object.y_add_outline', icon='OBJECT_DATA', text='Add Outline')
         c.operator('object.y_remove_outline', icon='OBJECT_DATA', text='Remove Outline')
+        c.operator('object.y_fix_blender_420_outlines', icon='OBJECT_DATA', text='Fix Blender 4.2 Outlines')
 
         c.prop(scene.yetc, 'hide_outline_while_texture_paint')
 

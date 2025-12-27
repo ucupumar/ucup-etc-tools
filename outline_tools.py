@@ -397,10 +397,70 @@ class YRemoveOutline(bpy.types.Operator):
 
         return {"FINISHED"}
 
+class YFixBlender420Outline(bpy.types.Operator):
+    bl_idname = "object.y_fix_blender_420_outlines"
+    bl_label = "Fix Blender 4.2 Outlines"
+    bl_description = "Fix buggy Blender 4.2 Outlines by removing \"Disable Shadow\" node"
+    bl_options = {'REGISTER', 'UNDO'}
+
+    @classmethod
+    def poll(cls, context):
+        return context.object #and context.object.type == 'MESH'
+
+    def execute(self, context):
+        mats = []
+        for o in bpy.data.objects:
+            m = get_outline_modifier(o)
+            if m: 
+                mat = get_outline_material(o, m)
+                if mat:
+                    idx = [i for i, ma in enumerate(o.data.materials) if ma == mat][0]
+                    if mat not in mats:
+                        mats.append(mat)
+
+        for mat in mats:
+            # Get outputs
+            matout = mat.node_tree.nodes.get('Material Output')
+            matout_1 = mat.node_tree.nodes.get('Material Output.001')
+
+            if matout and matout_1 and matout.target == 'CYCLES' and matout_1.target == 'EEVEE':
+
+                # Set material output node target
+                matout.target = 'ALL'
+
+                # Get disable shadow node
+                dishad = None
+                for node in mat.node_tree.nodes:
+                    if node.label == 'Disable Shadow' and node.type == 'MIX_SHADER' and len(node.outputs[0].links) > 0 and node.outputs[0].links[0].to_node == matout_1:
+                        dishad = node
+                        break
+
+                if dishad:
+                    unneded_nodes = [matout_1, dishad]
+                    # Remove all related nodes
+                    if len(dishad.inputs[0].links) > 0:
+                        node = dishad.inputs[0].links[0].from_node
+                        unneded_nodes.append(node)
+
+                    if len(dishad.inputs[2].links) > 0:
+                        node = dishad.inputs[2].links[0].from_node
+                        unneded_nodes.append(node)
+                
+                    for node in unneded_nodes:
+                        mat.node_tree.nodes.remove(node)
+            
+                # NOTE: Bonus: Also remove excess image nodes
+                for node in reversed(mat.node_tree.nodes):
+                    if node.type == 'TEX_IMAGE' and node.image == None:
+                        mat.node_tree.nodes.remove(node)
+                        
+        return {"FINISHED"}
+
 def register():
     bpy.utils.register_class(YAddOutline)
     bpy.utils.register_class(YAddStrokeGenOutline)
     bpy.utils.register_class(YRemoveOutline)
+    bpy.utils.register_class(YFixBlender420Outline)
     bpy.utils.register_class(YETCSceneProps)
     bpy.utils.register_class(YETCObjectProps)
 
@@ -413,6 +473,7 @@ def unregister():
     bpy.utils.unregister_class(YAddOutline)
     bpy.utils.unregister_class(YAddStrokeGenOutline)
     bpy.utils.unregister_class(YRemoveOutline)
+    bpy.utils.unregister_class(YFixBlender420Outline)
     bpy.utils.unregister_class(YETCSceneProps)
     bpy.utils.unregister_class(YETCObjectProps)
 
