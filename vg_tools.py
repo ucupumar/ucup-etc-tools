@@ -185,10 +185,14 @@ class YTransferWeightsAndSetup(bpy.types.Operator):
 
         # Check armature setup
         rig = None
-        mod = [m for m in obj.modifiers if m.type == 'ARMATURE' and m.object and m.show_viewport]
-        if mod: 
-            mod = mod[0]
+        mod = None
+        mods = [m for m in obj.modifiers if m.type == 'ARMATURE' and m.object and m.show_viewport]
+        if mods: 
+            mod = mods[0]
             rig = mod.object
+        else:
+            self.report({'ERROR'}, "Active object has no proper armature modifier!")
+            return {'CANCELLED'}
 
         # Deselect all first
         bpy.ops.object.mode_set(mode='OBJECT')
@@ -211,23 +215,36 @@ class YTransferWeightsAndSetup(bpy.types.Operator):
 
             # Set armature
             if rig: 
-                # Check if armature already been set
-                mod_founds = [m for m in o.modifiers if m.type == 'ARMATURE' and m.object == rig and m.show_render and m.show_viewport]
-                if not mod_founds:
-                    new_mod = o.modifiers.new('Armature', 'ARMATURE')
-                    #new_mod.object = rig
-                    for prop in dir(mod):
-                        try: setattr(new_mod, prop, getattr(mod, prop))
-                        except: pass
+                # Check for empty armature modifier
+                armod = None
+                empty_mods = [m for m in o.modifiers if m.type == 'ARMATURE' and m.object == None and m.show_render and m.show_viewport]
+                if empty_mods: 
+                    armod = empty_mods[0]
 
-                    # Put new modifier above subsurf
-                    if self.put_new_mod_above_subsurf:
-                        subsurf_ids = [i for i, m in enumerate(o.modifiers) if m.type == 'SUBSURF']
-                        if subsurf_ids:
-                            cur_id = len(o.modifiers)-1
-                            step = cur_id - subsurf_ids[0]
-                            for i in range(step):
-                                bpy.ops.object.modifier_move_up(modifier=new_mod.name)
+                # Check armature that already been set
+                if not armod:
+                    mod_founds = [m for m in o.modifiers if m.type == 'ARMATURE' and m.object == rig and m.show_render and m.show_viewport]
+                    if mod_founds:
+                        armod = mod_founds[0]
+                    else:
+                        armod = o.modifiers.new('Armature', 'ARMATURE')
+                        armod_name = armod.name
+
+                        # Put new modifier above subsurf
+                        if self.put_new_mod_above_subsurf:
+                            subsurf_ids = [i for i, m in enumerate(o.modifiers) if m.type == 'SUBSURF']
+                            if subsurf_ids:
+                                cur_id = len(o.modifiers)-1
+                                step = cur_id - subsurf_ids[0]
+                                for i in range(step):
+                                    bpy.ops.object.modifier_move_up(modifier=armod_name)
+
+                        armod = o.modifiers.get(armod_name)
+
+                if armod:
+                    for prop in dir(mod):
+                        try: setattr(armod, prop, getattr(mod, prop))
+                        except: pass
 
                     # Check if object is parented to bone
                     if o.parent == rig and o.parent_type == 'BONE':
