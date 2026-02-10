@@ -10,13 +10,13 @@ bl_info = {
 }
 
 if "bpy" in locals():
-    import imp
-    imp.reload(mirror_tools)
-    imp.reload(pose_tools)
-    imp.reload(mesh_tools)
-    imp.reload(vg_tools)
-    imp.reload(outline_tools)
-    imp.reload(ui)
+    import importlib
+    importlib.reload(mirror_tools)
+    importlib.reload(pose_tools)
+    importlib.reload(mesh_tools)
+    importlib.reload(vg_tools)
+    importlib.reload(outline_tools)
+    importlib.reload(ui)
 else:
     from . import mirror_tools, pose_tools, mesh_tools, vg_tools, outline_tools, ui
 
