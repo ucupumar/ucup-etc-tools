@@ -854,7 +854,7 @@ class YApplyArmature(bpy.types.Operator):
 
             if o.type == 'MESH':
                 for i, mod in enumerate(o.modifiers):
-                    if mod.type == 'ARMATURE' and mod.object == rig_obj:
+                    if mod.type == 'ARMATURE' and mod.object == rig_obj and mod.show_viewport:
                         objs.append(o)
                         armods.append(mod.name)
                         ori_mod_idx.append(i)
