@@ -76,6 +76,7 @@ def get_all_objects_using_rig_with_datas(rig):
 
         if o.type == 'MESH':
             for i, mod in enumerate(o.modifiers):
+                if not mod.show_viewport: continue
                 if mod.type == 'ARMATURE' and mod.object == rig:
                     objs.append(o)
                     armods.append(mod.name)
